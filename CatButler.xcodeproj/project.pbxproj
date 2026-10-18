@@ -13,6 +13,8 @@
 		808335586FA8C1CDE57A395B /* FirstRunUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3812F96BA30A3B15689AE781 /* FirstRunUITests.swift */; };
 		A82EDDE5EBA2E42DFC141ABC /* CatButlerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */; };
 		B4C054DD8D09E47C77503566 /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */; };
+		C27D3DD740E209A0CA9CAEF9 /* UITestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EC56CA39CBCB08C0C218079 /* UITestHelpers.swift */; };
+		D1F8297188C56AA2CF1C0A4B /* NumberField.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA726DBFDCCBE04E6190F74 /* NumberField.swift */; };
 		D859284EED9938ABA4F84893 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE256923D3095CC8EAAAEE8 /* TodayView.swift */; };
 /* End PBXBuildFile section */
 
@@ -31,11 +33,13 @@
 		5AC084D8949371D66FFE430F /* FoodsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsUITests.swift; sourceTree = "<group>"; };
 		61BB67926E171EA1B8DA2AC3 /* CatButlerCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CatButlerCore; path = CatButlerCore; sourceTree = SOURCE_ROOT; };
 		6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatButlerApp.swift; sourceTree = "<group>"; };
+		6EC56CA39CBCB08C0C218079 /* UITestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestHelpers.swift; sourceTree = "<group>"; };
 		99469767F0BB102C3EB24CF1 /* CatButlerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CatButlerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAE256923D3095CC8EAAAEE8 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		B6224B82986FF4D0CC5BF122 /* FoodsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsView.swift; sourceTree = "<group>"; };
 		BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunView.swift; sourceTree = "<group>"; };
 		D96C22BAE6F8AE25ED4EF4CC /* CatButler.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CatButler.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DFA726DBFDCCBE04E6190F74 /* NumberField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberField.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,6 +87,7 @@
 				6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */,
 				BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */,
 				B6224B82986FF4D0CC5BF122 /* FoodsView.swift */,
+				DFA726DBFDCCBE04E6190F74 /* NumberField.swift */,
 				AAE256923D3095CC8EAAAEE8 /* TodayView.swift */,
 			);
 			path = CatButler;
@@ -93,6 +98,7 @@
 			children = (
 				3812F96BA30A3B15689AE781 /* FirstRunUITests.swift */,
 				5AC084D8949371D66FFE430F /* FoodsUITests.swift */,
+				6EC56CA39CBCB08C0C218079 /* UITestHelpers.swift */,
 			);
 			path = CatButlerUITests;
 			sourceTree = "<group>";
@@ -181,6 +187,7 @@
 			files = (
 				808335586FA8C1CDE57A395B /* FirstRunUITests.swift in Sources */,
 				06735874F9788F6643D8FD68 /* FoodsUITests.swift in Sources */,
+				C27D3DD740E209A0CA9CAEF9 /* UITestHelpers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -191,6 +198,7 @@
 				A82EDDE5EBA2E42DFC141ABC /* CatButlerApp.swift in Sources */,
 				B4C054DD8D09E47C77503566 /* FirstRunView.swift in Sources */,
 				46EE55EC12472E4E98AD5B36 /* FoodsView.swift in Sources */,
+				D1F8297188C56AA2CF1C0A4B /* NumberField.swift in Sources */,
 				D859284EED9938ABA4F84893 /* TodayView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

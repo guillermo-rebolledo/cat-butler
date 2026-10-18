@@ -100,7 +100,7 @@ struct FoodEditor: View {
         Toggle("Free-fed", isOn: $isFreeFed)
         if food != nil { Toggle("Retired", isOn: $isRetired) }
       } footer: {
-        if food != nil { Text("Retired Foods stay in past records but leave the pickers.") }
+        if food != nil { Text("Retired Foods stay in past Feedings but leave the pickers.") }
       }
     }
     // An existing Food's kcal is per its old unit; make the owner re-enter it rather than silently reinterpret it.

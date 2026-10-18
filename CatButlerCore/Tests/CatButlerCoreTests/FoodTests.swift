@@ -17,12 +17,17 @@ struct FoodTests {
     let (cat, food) = try database.write { db in
       (
         try db.addCat(name: "Miso", photo: nil, birthdate: .now, isNeutered: false, weight: Measurement(value: 4, unit: .kilograms)),
-        try db.addFood(name: "Tuna pâté", servingUnit: .can, kcalPerUnit: 76.5, isTreat: false, isFreeFed: false)
+        try db.addFood(name: "Tuna pâté", servingUnit: .can, kcalPerUnit: 76.5, isTreat: true, isFreeFed: true)
       )
     }
-    #expect(food.householdID == cat.householdID)
-    #expect(food.kcalPerUnit == 76.5)
-    #expect(!food.isRetired)
+    let stored = try database.read { try Food.find(food.id).fetchOne($0) }
+    #expect(stored?.householdID == cat.householdID)
+    #expect(stored?.name == "Tuna pâté")
+    #expect(stored?.servingUnit == .can)
+    #expect(stored?.kcalPerUnit == 76.5)
+    #expect(stored?.isTreat == true)
+    #expect(stored?.isFreeFed == true)
+    #expect(stored?.isRetired == false)
   }
 
   @Test func retiredFoodsLeavePickersButKeepTheirDetails() throws {
@@ -36,6 +41,16 @@ struct FoodTests {
     try database.write { try Food.update(kibble).execute($0) }
 
     #expect(try database.read { try Food.active.fetchAll($0) } == [treat])
+    #expect(try database.read { try Food.retired.fetchAll($0) } == [kibble])
     #expect(try database.read { try Food.find(kibble.id).fetchOne($0) } == kibble)
+  }
+
+  @Test func foodsAreListedAlphabeticallyIgnoringCase() throws {
+    try database.write { db in
+      for name in ["Zebra mix", "apple bites", "Mackerel"] {
+        try db.addFood(name: name, servingUnit: .can, kcalPerUnit: 80, isTreat: false, isFreeFed: false)
+      }
+    }
+    #expect(try database.read { try Food.active.fetchAll($0) }.map(\.name) == ["apple bites", "Mackerel", "Zebra mix"])
   }
 }

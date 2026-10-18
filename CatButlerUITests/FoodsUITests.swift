@@ -19,10 +19,16 @@ final class FoodsUITests: XCTestCase {
     kcal.typeText("0.9")
     app.buttons["Save"].tap()
     XCTAssertTrue(app.staticTexts["0.9 kcal per gram"].waitForExistence(timeout: 5))
+
+    // Same for changing how the label states calories: 0.9 per gram isn't 0.9 per 100 g.
+    app.staticTexts["Tuna pâté"].tap()
+    app.buttons["Label states calories, Per gram"].tap()
+    app.buttons["Per 100 g"].tap()
+    XCTAssertFalse(app.buttons["Save"].isEnabled)
   }
 
   @MainActor
-  func testAFoodNeedsANameThatIsNotJustSpaces() {
+  func testAddingAFoodNeedsARealNameAndKeepsItsFlags() {
     let app = XCUIApplication.launchedForTesting()
     app.completeFirstRunAndOpenFoods()
     app.buttons["Add Food"].tap()
@@ -38,8 +44,16 @@ final class FoodsUITests: XCTestCase {
 
     name.tap()
     name.typeText("Chicken")
+    app.switches["Treat"].switches.firstMatch.tap()
+    app.switches["Free-fed"].switches.firstMatch.tap()
     app.buttons["Save"].tap()
     XCTAssertTrue(app.staticTexts["Chicken"].waitForExistence(timeout: 5))
+
+    // Treat and free-fed are kept with the Food.
+    app.staticTexts["Chicken"].tap()
+    XCTAssertEqual(app.switches["Treat"].value as? String, "1")
+    XCTAssertEqual(app.switches["Free-fed"].value as? String, "1")
+    XCTAssertEqual(app.switches["Retired"].value as? String, "0")
   }
 
   @MainActor

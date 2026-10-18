@@ -52,7 +52,7 @@ public enum ServingUnit: String, CaseIterable, QueryBindable, Sendable {
   case can, pouch, gram, cup
 }
 
-/// A product or food a Cat eats. Retired Foods leave pickers but keep their details for past records.
+/// A specific food a Cat eats. Retired Foods leave pickers but keep their details for past Feedings.
 @Table
 public nonisolated struct Food: Hashable, Identifiable, Sendable {
   public let id: UUID
@@ -67,8 +67,9 @@ public nonisolated struct Food: Hashable, Identifiable, Sendable {
 
 extension Food {
   /// Foods the owner can still pick.
-  public static let active = Food.where { !$0.isRetired }.order(by: \.name)
-  public static let retired = Food.where(\.isRetired).order(by: \.name)
+  // ponytail: NOCASE folds ASCII only, so "Éclair" sorts after "Zebra"; switch to a Unicode collation if that shows up.
+  public static let active = Food.where { !$0.isRetired }.order { $0.name.collate(.nocase) }
+  public static let retired = Food.where(\.isRetired).order { $0.name.collate(.nocase) }
 }
 
 extension Database {

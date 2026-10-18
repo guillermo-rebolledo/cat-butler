@@ -30,7 +30,7 @@ public struct CalorieLabel: Sendable {
   public func kcal(per unit: ServingUnit, gramsPerUnit: Double?) -> Double? {
     guard kcal > 0 else { return nil }
     guard let basisGrams = basis.grams else { return kcal }
-    guard let unitGrams = unit == .gram ? 1 : gramsPerUnit, unitGrams > 0 else { return nil }
+    guard let unitGrams = needsGramsPerUnit(for: unit) ? gramsPerUnit : 1, unitGrams > 0 else { return nil }
     return kcal * unitGrams / basisGrams
   }
 }
