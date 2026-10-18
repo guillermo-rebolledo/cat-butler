@@ -10,7 +10,10 @@ struct FoodsView: View {
 
   var body: some View {
     List {
-      Section { ForEach(active) { FoodRow(food: $0) } }
+      Section {
+        ForEach(active) { FoodRow(food: $0) }
+        if active.isEmpty { Text("No Foods in use. Add one, or bring back a retired one.").foregroundStyle(.secondary) }
+      }
       if !retired.isEmpty {
         Section("Retired") { ForEach(retired) { FoodRow(food: $0) } }
       }
@@ -37,7 +40,7 @@ private struct FoodRow: View {
     } label: {
       VStack(alignment: .leading) {
         Text(food.name)
-        Text("\(food.kcalPerUnit, format: .number.precision(.fractionLength(0...1))) kcal per \(food.servingUnit.rawValue)")
+        Text(food.servingUnit.kcalText(food.kcalPerUnit))
           .font(.subheadline).foregroundStyle(.secondary)
       }
     }
@@ -46,14 +49,12 @@ private struct FoodRow: View {
 
 /// Adds a new Food, or edits one when `food` is given. Used by first-run step 2 too.
 struct FoodEditor: View {
-  enum Basis: CaseIterable { case perUnit, per100g, perKilogram }
-
   var food: Food?
   @Dependency(\.defaultDatabase) var database
   @Environment(\.dismiss) private var dismiss
   @State private var name: String
   @State private var servingUnit: ServingUnit
-  @State private var basis = Basis.perUnit
+  @State private var basis = CalorieLabel.Basis.unit
   @State private var kcal: Double?
   @State private var gramsPerUnit: Double?
   @State private var isTreat: Bool
@@ -70,52 +71,28 @@ struct FoodEditor: View {
     _isRetired = State(initialValue: food?.isRetired ?? false)
   }
 
-  private var label: CalorieLabel? {
-    guard let kcal, kcal > 0 else { return nil }
-    switch basis {
-    case .perUnit: return .perUnit(kcal)
-    case .per100g: return .per100g(kcal)
-    case .perKilogram: return .perKilogram(kcal)
-    }
-  }
-
-  private var kcalPerUnit: Double? {
-    label?.kcal(per: servingUnit, gramsPerUnit: (gramsPerUnit ?? 0) > 0 ? gramsPerUnit : nil)
-  }
+  private var label: CalorieLabel { CalorieLabel(kcal: kcal ?? 0, per: basis) }
+  private var kcalPerUnit: Double? { label.kcal(per: servingUnit, gramsPerUnit: gramsPerUnit) }
 
   var body: some View {
     Form {
       Section {
         TextField("Name", text: $name)
         Picker("Serving unit", selection: $servingUnit) {
-          ForEach(ServingUnit.allCases, id: \.self) { Text($0.rawValue) }
+          ForEach(ServingUnit.allCases, id: \.self) { Text($0.title) }
         }
       }
       Section {
         Picker("Label states calories", selection: $basis) {
-          ForEach(Basis.allCases, id: \.self) { Text($0.title(for: servingUnit)) }
+          ForEach(CalorieLabel.Basis.allCases, id: \.self) { Text($0.title(for: servingUnit)) }
         }
-        LabeledContent("Calories") {
-          HStack {
-            TextField("kcal", value: $kcal, format: .number)
-              .keyboardType(.decimalPad)
-              .multilineTextAlignment(.trailing)
-            Text("kcal")
-          }
-        }
-        if label?.needsGramsPerUnit(for: servingUnit) == true {
-          LabeledContent("Weight of one \(servingUnit.rawValue)") {
-            HStack {
-              TextField("grams", value: $gramsPerUnit, format: .number)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-              Text("g")
-            }
-          }
+        NumberField("Calories", value: $kcal, unit: "kcal")
+        if label.needsGramsPerUnit(for: servingUnit) {
+          NumberField("Weight of one \(servingUnit.title)", value: $gramsPerUnit, unit: "g")
         }
       } footer: {
-        if let kcalPerUnit, basis != .perUnit {
-          Text("\(kcalPerUnit, format: .number.precision(.fractionLength(0...1))) kcal per \(servingUnit.rawValue)")
+        if let kcalPerUnit, basis != .unit {
+          Text(servingUnit.kcalText(kcalPerUnit))
         }
       }
       Section {
@@ -163,12 +140,28 @@ struct FoodEditor: View {
   }
 }
 
-extension FoodEditor.Basis {
+extension ServingUnit {
+  var title: String {
+    switch self {
+    case .can: String(localized: "can")
+    case .pouch: String(localized: "pouch")
+    case .gram: String(localized: "gram")
+    case .cup: String(localized: "cup")
+    }
+  }
+
+  /// "76.5 kcal per can"
+  func kcalText(_ kcal: Double) -> String {
+    String(localized: "\(kcal.formatted(.number.precision(.fractionLength(0...1)))) kcal per \(title)")
+  }
+}
+
+extension CalorieLabel.Basis {
   func title(for unit: ServingUnit) -> String {
     switch self {
-    case .perUnit: "Per \(unit.rawValue)"
-    case .per100g: "Per 100 g"
-    case .perKilogram: "Per kg"
+    case .unit: String(localized: "Per \(unit.title)")
+    case .hundredGrams: String(localized: "Per 100 g")
+    case .kilogram: String(localized: "Per kg")
     }
   }
 }

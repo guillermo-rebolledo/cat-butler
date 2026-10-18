@@ -1,29 +1,36 @@
-import SQLiteData
-
-/// How a Food is measured out: one can, one pouch, one gram or one cup.
-public enum ServingUnit: String, CaseIterable, QueryBindable, Sendable {
-  case can, pouch, gram, cup
-}
-
 /// Calories as printed on a Food's label.
-public enum CalorieLabel: Sendable {
-  case perUnit(Double), per100g(Double), perKilogram(Double)
+public struct CalorieLabel: Sendable {
+  /// What the label's calories are counted against.
+  public enum Basis: CaseIterable, Sendable {
+    case unit, hundredGrams, kilogram
+
+    var grams: Double? {
+      switch self {
+      case .unit: nil
+      case .hundredGrams: 100
+      case .kilogram: 1_000
+      }
+    }
+  }
+
+  public var kcal: Double
+  public var basis: Basis
+
+  public init(kcal: Double, per basis: Basis) {
+    self.kcal = kcal
+    self.basis = basis
+  }
 
   /// Whether converting to kcal per `unit` needs the gram weight of one unit.
   public func needsGramsPerUnit(for unit: ServingUnit) -> Bool {
-    if case .perUnit = self { return false }
-    return unit != .gram
+    basis != .unit && unit != .gram
   }
 
-  /// kcal per one `unit`, or nil when the gram weight is needed but missing.
+  /// kcal per one `unit`, or nil when the label's kcal isn't positive, or the gram weight is needed but missing or not positive.
   public func kcal(per unit: ServingUnit, gramsPerUnit: Double?) -> Double? {
-    let (kcal, grams): (Double, Double)
-    switch self {
-    case .perUnit(let value): return value
-    case .per100g(let value): (kcal, grams) = (value, 100)
-    case .perKilogram(let value): (kcal, grams) = (value, 1_000)
-    }
-    guard let unitGrams = unit == .gram ? 1 : gramsPerUnit else { return nil }
-    return kcal * unitGrams / grams
+    guard kcal > 0 else { return nil }
+    guard let basisGrams = basis.grams else { return kcal }
+    guard let unitGrams = unit == .gram ? 1 : gramsPerUnit, unitGrams > 0 else { return nil }
+    return kcal * unitGrams / basisGrams
   }
 }

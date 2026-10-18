@@ -47,6 +47,11 @@ extension WeighIn {
   }
 }
 
+/// How a Food is measured out: one can, one pouch, one gram or one cup.
+public enum ServingUnit: String, CaseIterable, QueryBindable, Sendable {
+  case can, pouch, gram, cup
+}
+
 /// A product or food a Cat eats. Retired Foods leave pickers but keep their details for past records.
 @Table
 public nonisolated struct Food: Hashable, Identifiable, Sendable {
@@ -68,6 +73,7 @@ extension Food {
 
 extension Database {
   /// The Household, created silently the first time it's needed.
+  // ponytail: assumes one Household per database; look it up by the signed-in member once Household sharing lands.
   private func household() throws -> Household {
     @Dependency(\.uuid) var uuid
     if let existing = try Household.all.fetchOne(self) { return existing }

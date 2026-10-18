@@ -38,14 +38,7 @@ struct FirstRunView: View {
         }
         Section {
           Toggle("Neutered", isOn: $isNeutered)
-          LabeledContent("Weight") {
-            HStack {
-              TextField("0", value: $weight, format: .number)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-              Text(weightUnit.symbol)
-            }
-          }
+          NumberField("Weight", value: $weight, unit: weightUnit.symbol)
         }
       }
       .navigationTitle("Your Cat")
@@ -79,6 +72,30 @@ private func downscaled(_ data: Data) -> Data? {
   let scale = min(1, 1024 / max(image.size.width, image.size.height))
   let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
   return image.preparingThumbnail(of: size)?.jpegData(compressionQuality: 0.8)
+}
+
+/// A labelled decimal entry with its unit after the number, e.g. "Weight  4.2 kg".
+struct NumberField: View {
+  let title: String
+  @Binding var value: Double?
+  let unit: String
+
+  init(_ title: String, value: Binding<Double?>, unit: String) {
+    self.title = title
+    _value = value
+    self.unit = unit
+  }
+
+  var body: some View {
+    LabeledContent(title) {
+      HStack {
+        TextField("0", value: $value, format: .number)
+          .keyboardType(.decimalPad)
+          .multilineTextAlignment(.trailing)
+        Text(unit)
+      }
+    }
+  }
 }
 
 struct CatPhoto: View {
