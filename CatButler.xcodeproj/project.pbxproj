@@ -1,0 +1,443 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		36EAB24A1134476AF9CF2290 /* CatButlerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 26C5E937E62EE9E7E031B046 /* CatButlerCore */; };
+		808335586FA8C1CDE57A395B /* FirstRunUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3812F96BA30A3B15689AE781 /* FirstRunUITests.swift */; };
+		A82EDDE5EBA2E42DFC141ABC /* CatButlerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */; };
+		B4C054DD8D09E47C77503566 /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */; };
+		D859284EED9938ABA4F84893 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE256923D3095CC8EAAAEE8 /* TodayView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D9851346BA66F3CD16EEACCD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A8B1F2873CE8E8FC20B1936D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 481193CF0891993ABCE6B2A8;
+			remoteInfo = CatButler;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		3812F96BA30A3B15689AE781 /* FirstRunUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunUITests.swift; sourceTree = "<group>"; };
+		61BB67926E171EA1B8DA2AC3 /* CatButlerCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CatButlerCore; path = CatButlerCore; sourceTree = SOURCE_ROOT; };
+		6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatButlerApp.swift; sourceTree = "<group>"; };
+		99469767F0BB102C3EB24CF1 /* CatButlerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CatButlerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AAE256923D3095CC8EAAAEE8 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunView.swift; sourceTree = "<group>"; };
+		D96C22BAE6F8AE25ED4EF4CC /* CatButler.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CatButler.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		09B4499DCA113FDF1FEC4C21 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				36EAB24A1134476AF9CF2290 /* CatButlerCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		6AEFE4BE9939E5B2DDA24D7B = {
+			isa = PBXGroup;
+			children = (
+				F81E925E19D2F451E85A96E7 /* CatButler */,
+				FF1EF1B159DEF3477C09B34D /* CatButlerUITests */,
+				F66E6B54F79152CF06177970 /* Packages */,
+				AF7EF5A719388E06C07C335C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AF7EF5A719388E06C07C335C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D96C22BAE6F8AE25ED4EF4CC /* CatButler.app */,
+				99469767F0BB102C3EB24CF1 /* CatButlerUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F66E6B54F79152CF06177970 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				61BB67926E171EA1B8DA2AC3 /* CatButlerCore */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		F81E925E19D2F451E85A96E7 /* CatButler */ = {
+			isa = PBXGroup;
+			children = (
+				6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */,
+				BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */,
+				AAE256923D3095CC8EAAAEE8 /* TodayView.swift */,
+			);
+			path = CatButler;
+			sourceTree = "<group>";
+		};
+		FF1EF1B159DEF3477C09B34D /* CatButlerUITests */ = {
+			isa = PBXGroup;
+			children = (
+				3812F96BA30A3B15689AE781 /* FirstRunUITests.swift */,
+			);
+			path = CatButlerUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		481193CF0891993ABCE6B2A8 /* CatButler */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5DEB20C31DDD051170FE649C /* Build configuration list for PBXNativeTarget "CatButler" */;
+			buildPhases = (
+				B4480A60A6086116657D2E26 /* Sources */,
+				09B4499DCA113FDF1FEC4C21 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CatButler;
+			packageProductDependencies = (
+				26C5E937E62EE9E7E031B046 /* CatButlerCore */,
+			);
+			productName = CatButler;
+			productReference = D96C22BAE6F8AE25ED4EF4CC /* CatButler.app */;
+			productType = "com.apple.product-type.application";
+		};
+		6D78B54D23CE29A6C24819CF /* CatButlerUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F9D60916E254F74CCA4FD52E /* Build configuration list for PBXNativeTarget "CatButlerUITests" */;
+			buildPhases = (
+				5A74179065A7EC15566D8AA1 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D37BEB8E805933F69A443A51 /* PBXTargetDependency */,
+			);
+			name = CatButlerUITests;
+			packageProductDependencies = (
+			);
+			productName = CatButlerUITests;
+			productReference = 99469767F0BB102C3EB24CF1 /* CatButlerUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A8B1F2873CE8E8FC20B1936D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					6D78B54D23CE29A6C24819CF = {
+						TestTargetID = 481193CF0891993ABCE6B2A8;
+					};
+				};
+			};
+			buildConfigurationList = CF7A4DA1BD0FE3F755832021 /* Build configuration list for PBXProject "CatButler" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 6AEFE4BE9939E5B2DDA24D7B;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A5697A5556286061D3399533 /* XCLocalSwiftPackageReference "CatButlerCore" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = AF7EF5A719388E06C07C335C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				481193CF0891993ABCE6B2A8 /* CatButler */,
+				6D78B54D23CE29A6C24819CF /* CatButlerUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5A74179065A7EC15566D8AA1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				808335586FA8C1CDE57A395B /* FirstRunUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B4480A60A6086116657D2E26 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A82EDDE5EBA2E42DFC141ABC /* CatButlerApp.swift in Sources */,
+				B4C054DD8D09E47C77503566 /* FirstRunView.swift in Sources */,
+				D859284EED9938ABA4F84893 /* TodayView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D37BEB8E805933F69A443A51 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 481193CF0891993ABCE6B2A8 /* CatButler */;
+			targetProxy = D9851346BA66F3CD16EEACCD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0411BE2C09BD5BEC622BB369 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.rebolledo.CatButler;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		284BF3D71C636BA703E8B1B3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		8C79EC61802CE26906E1216A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		95C20DA8C73C55C0621B6AF3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.rebolledo.CatButlerUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CatButler;
+			};
+			name = Debug;
+		};
+		A572125DDAD5F0E4E6B7D628 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.rebolledo.CatButlerUITests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CatButler;
+			};
+			name = Release;
+		};
+		DC182C6ABD12D0820C9894F2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.rebolledo.CatButler;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5DEB20C31DDD051170FE649C /* Build configuration list for PBXNativeTarget "CatButler" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0411BE2C09BD5BEC622BB369 /* Debug */,
+				DC182C6ABD12D0820C9894F2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CF7A4DA1BD0FE3F755832021 /* Build configuration list for PBXProject "CatButler" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				284BF3D71C636BA703E8B1B3 /* Debug */,
+				8C79EC61802CE26906E1216A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F9D60916E254F74CCA4FD52E /* Build configuration list for PBXNativeTarget "CatButlerUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				95C20DA8C73C55C0621B6AF3 /* Debug */,
+				A572125DDAD5F0E4E6B7D628 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A5697A5556286061D3399533 /* XCLocalSwiftPackageReference "CatButlerCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = CatButlerCore;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		26C5E937E62EE9E7E031B046 /* CatButlerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CatButlerCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A8B1F2873CE8E8FC20B1936D /* Project object */;
+}
