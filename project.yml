@@ -1,0 +1,39 @@
+name: CatButler
+options:
+  bundleIdPrefix: dev.rebolledo
+  deploymentTarget:
+    iOS: "26.0"
+packages:
+  CatButlerCore:
+    path: CatButlerCore
+targets:
+  CatButler:
+    type: application
+    platform: iOS
+    sources: [CatButler]
+    dependencies:
+      - package: CatButlerCore
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+  CatButlerUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [CatButlerUITests]
+    dependencies:
+      - target: CatButler
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  CatButler:
+    build:
+      targets:
+        CatButler: all
+    test:
+      targets: [CatButlerUITests]
