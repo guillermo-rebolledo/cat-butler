@@ -7,6 +7,7 @@ final class FirstRunUITests: XCTestCase {
     // US units, so the weight round-trips lb → kg → lb.
     app.launchArguments = ["-ui-testing", "-AppleLocale", "en_US"]
     app.launch()
+    attachScreenshot("First run", of: app)
 
     let name = app.textFields["Name"]
     XCTAssertTrue(name.waitForExistence(timeout: 5))
@@ -17,6 +18,7 @@ final class FirstRunUITests: XCTestCase {
     weight.tap()
     weight.typeText("9")
 
+    attachScreenshot("First run filled in", of: app)
     app.buttons["Continue"].tap()
 
     XCTAssertTrue(app.staticTexts["Miso"].waitForExistence(timeout: 5))
@@ -25,5 +27,14 @@ final class FirstRunUITests: XCTestCase {
     for tab in ["Today", "Cats", "Care", "Settings"] {
       XCTAssertTrue(app.tabBars.buttons[tab].exists, tab)
     }
+    attachScreenshot("Today", of: app)
+  }
+
+  @MainActor
+  private func attachScreenshot(_ name: String, of app: XCUIApplication) {
+    let attachment = XCTAttachment(screenshot: app.screenshot())
+    attachment.name = name
+    attachment.lifetime = .keepAlways
+    add(attachment)
   }
 }
