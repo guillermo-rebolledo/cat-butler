@@ -19,16 +19,24 @@ struct CatButlerApp: App {
 
 struct RootView: View {
   @FetchAll var cats: [Cat]
+  @FetchAll var foods: [Food]
 
   var body: some View {
     if cats.isEmpty {
       FirstRunView()
+    } else if foods.isEmpty {
+      // First-run step 2: the Food.
+      NavigationStack { FoodEditor() }
     } else {
       TabView {
         Tab("Today", systemImage: "sun.max") { TodayView() }
         Tab("Cats", systemImage: "cat") { Text("Cats") }
         Tab("Care", systemImage: "cross.case") { Text("Care") }
-        Tab("Settings", systemImage: "gear") { Text("Settings") }
+        Tab("Settings", systemImage: "gear") {
+          NavigationStack {
+            List { NavigationLink("Foods") { FoodsView() } }.navigationTitle("Settings")
+          }
+        }
       }
     }
   }

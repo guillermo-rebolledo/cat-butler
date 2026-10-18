@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		36EAB24A1134476AF9CF2290 /* CatButlerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 26C5E937E62EE9E7E031B046 /* CatButlerCore */; };
+		46EE55EC12472E4E98AD5B36 /* FoodsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6224B82986FF4D0CC5BF122 /* FoodsView.swift */; };
 		808335586FA8C1CDE57A395B /* FirstRunUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3812F96BA30A3B15689AE781 /* FirstRunUITests.swift */; };
 		A82EDDE5EBA2E42DFC141ABC /* CatButlerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */; };
 		B4C054DD8D09E47C77503566 /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */; };
@@ -30,6 +31,7 @@
 		6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatButlerApp.swift; sourceTree = "<group>"; };
 		99469767F0BB102C3EB24CF1 /* CatButlerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CatButlerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		AAE256923D3095CC8EAAAEE8 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		B6224B82986FF4D0CC5BF122 /* FoodsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsView.swift; sourceTree = "<group>"; };
 		BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunView.swift; sourceTree = "<group>"; };
 		D96C22BAE6F8AE25ED4EF4CC /* CatButler.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CatButler.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -78,6 +80,7 @@
 			children = (
 				6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */,
 				BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */,
+				B6224B82986FF4D0CC5BF122 /* FoodsView.swift */,
 				AAE256923D3095CC8EAAAEE8 /* TodayView.swift */,
 			);
 			path = CatButler;
@@ -183,6 +186,7 @@
 			files = (
 				A82EDDE5EBA2E42DFC141ABC /* CatButlerApp.swift in Sources */,
 				B4C054DD8D09E47C77503566 /* FirstRunView.swift in Sources */,
+				46EE55EC12472E4E98AD5B36 /* FoodsView.swift in Sources */,
 				D859284EED9938ABA4F84893 /* TodayView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

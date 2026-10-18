@@ -47,7 +47,45 @@ extension WeighIn {
   }
 }
 
+/// A product or food a Cat eats. Retired Foods leave pickers but keep their details for past records.
+@Table
+public nonisolated struct Food: Hashable, Identifiable, Sendable {
+  public let id: UUID
+  public var householdID: Household.ID
+  public var name: String
+  public var servingUnit: ServingUnit
+  public var kcalPerUnit: Double
+  public var isTreat: Bool
+  public var isFreeFed: Bool
+  public var isRetired: Bool
+}
+
+extension Food {
+  /// Foods the owner can still pick.
+  public static let active = Food.where { !$0.isRetired }.order(by: \.name)
+}
+
 extension Database {
+  /// The Household, created silently the first time it's needed.
+  private func household() throws -> Household {
+    @Dependency(\.uuid) var uuid
+    if let existing = try Household.all.fetchOne(self) { return existing }
+    let household = Household(id: uuid())
+    try Household.insert { household }.execute(self)
+    return household
+  }
+
+  @discardableResult
+  public func addFood(name: String, servingUnit: ServingUnit, kcalPerUnit: Double, isTreat: Bool, isFreeFed: Bool) throws -> Food {
+    @Dependency(\.uuid) var uuid
+    let food = Food(
+      id: uuid(), householdID: try household().id, name: name, servingUnit: servingUnit,
+      kcalPerUnit: kcalPerUnit, isTreat: isTreat, isFreeFed: isFreeFed, isRetired: false
+    )
+    try Food.insert { food }.execute(self)
+    return food
+  }
+
   /// Adds a Cat to the Household (creating it on first run) and records its first Weigh-in.
   @discardableResult
   public func addCat(
@@ -60,16 +98,9 @@ extension Database {
     @Dependency(\.uuid) var uuid
     @Dependency(\.date.now) var now
 
-    let household: Household
-    if let existing = try Household.all.fetchOne(self) {
-      household = existing
-    } else {
-      household = Household(id: uuid())
-      try Household.insert { household }.execute(self)
-    }
     let cat = Cat(
       id: uuid(),
-      householdID: household.id,
+      householdID: try household().id,
       name: name,
       photo: photo,
       birthdate: birthdate,
@@ -125,6 +156,24 @@ public func appDatabase() throws -> any DatabaseWriter {
     .execute(db)
     try #sql(#"CREATE INDEX "idx_cats_householdID" ON "cats"("householdID")"#).execute(db)
     try #sql(#"CREATE INDEX "idx_weighIns_catID" ON "weighIns"("catID")"#).execute(db)
+  }
+  migrator.registerMigration("Create foods") { db in
+    try #sql(
+      """
+      CREATE TABLE "foods" (
+        "id" TEXT PRIMARY KEY NOT NULL ON CONFLICT REPLACE DEFAULT (uuid()),
+        "householdID" TEXT NOT NULL REFERENCES "households"("id") ON DELETE CASCADE,
+        "name" TEXT NOT NULL ON CONFLICT REPLACE DEFAULT '',
+        "servingUnit" TEXT NOT NULL,
+        "kcalPerUnit" REAL NOT NULL,
+        "isTreat" INTEGER NOT NULL ON CONFLICT REPLACE DEFAULT 0,
+        "isFreeFed" INTEGER NOT NULL ON CONFLICT REPLACE DEFAULT 0,
+        "isRetired" INTEGER NOT NULL ON CONFLICT REPLACE DEFAULT 0
+      ) STRICT
+      """
+    )
+    .execute(db)
+    try #sql(#"CREATE INDEX "idx_foods_householdID" ON "foods"("householdID")"#).execute(db)
   }
   try migrator.migrate(database)
   return database
