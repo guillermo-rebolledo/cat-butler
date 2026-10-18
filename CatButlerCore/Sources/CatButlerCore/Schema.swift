@@ -63,6 +63,7 @@ public nonisolated struct Food: Hashable, Identifiable, Sendable {
 extension Food {
   /// Foods the owner can still pick.
   public static let active = Food.where { !$0.isRetired }.order(by: \.name)
+  public static let retired = Food.where(\.isRetired).order(by: \.name)
 }
 
 extension Database {
@@ -75,6 +76,7 @@ extension Database {
     return household
   }
 
+  /// Adds a Food to the Household, with calories already converted to kcal per serving unit.
   @discardableResult
   public func addFood(name: String, servingUnit: ServingUnit, kcalPerUnit: Double, isTreat: Bool, isFreeFed: Bool) throws -> Food {
     @Dependency(\.uuid) var uuid

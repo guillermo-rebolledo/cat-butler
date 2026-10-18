@@ -5,7 +5,7 @@ import SwiftUI
 /// Lists the Household's Foods; reached from Settings after first run.
 struct FoodsView: View {
   @FetchAll(Food.active) var active
-  @FetchAll(Food.where(\.isRetired).order(by: \.name)) var retired
+  @FetchAll(Food.retired) var retired
   @State private var isAdding = false
 
   var body: some View {
@@ -21,7 +21,7 @@ struct FoodsView: View {
     }
     .sheet(isPresented: $isAdding) {
       NavigationStack {
-        FoodEditor { isAdding = false }
+        FoodEditor()
           .toolbar { Button("Cancel") { isAdding = false } }
       }
     }
@@ -49,7 +49,6 @@ struct FoodEditor: View {
   enum Basis: CaseIterable { case perUnit, per100g, perKilogram }
 
   var food: Food?
-  var onSave: () -> Void = {}
   @Dependency(\.defaultDatabase) var database
   @Environment(\.dismiss) private var dismiss
   @State private var name: String
@@ -61,9 +60,8 @@ struct FoodEditor: View {
   @State private var isFreeFed: Bool
   @State private var isRetired: Bool
 
-  init(food: Food? = nil, onSave: @escaping () -> Void = {}) {
+  init(food: Food? = nil) {
     self.food = food
-    self.onSave = onSave
     _name = State(initialValue: food?.name ?? "")
     _servingUnit = State(initialValue: food?.servingUnit ?? .can)
     _kcal = State(initialValue: food?.kcalPerUnit)
@@ -128,17 +126,23 @@ struct FoodEditor: View {
         if food != nil { Text("Retired Foods stay in past records but leave the pickers.") }
       }
     }
+    // An existing Food's kcal is per its old unit; make the owner re-enter it rather than silently reinterpret it.
+    .onChange(of: servingUnit) { if food != nil { kcal = nil } }
+    .onChange(of: basis) { if food != nil { kcal = nil } }
     .navigationTitle(food == nil ? "Add Food" : "Edit Food")
     .toolbar {
       ToolbarItem(placement: .confirmationAction) {
-        Button("Save", action: save).disabled(name.isEmpty || kcalPerUnit == nil)
+        Button("Save", action: save).disabled(trimmedName.isEmpty || kcalPerUnit == nil)
       }
     }
   }
 
+  private var trimmedName: String { name.trimmingCharacters(in: .whitespaces) }
+
   private func save() {
     guard let kcalPerUnit else { return }
-    withErrorReporting {
+    let name = trimmedName
+    let saved = withErrorReporting {
       try database.write { db in
         if var food {
           food.name = name
@@ -152,9 +156,10 @@ struct FoodEditor: View {
           try db.addFood(name: name, servingUnit: servingUnit, kcalPerUnit: kcalPerUnit, isTreat: isTreat, isFreeFed: isFreeFed)
         }
       }
+      return true
     }
-    if food != nil { dismiss() }
-    onSave()
+    // Closes the add sheet or the edit screen; on first run RootView moves on by itself.
+    if saved == true { dismiss() }
   }
 }
 

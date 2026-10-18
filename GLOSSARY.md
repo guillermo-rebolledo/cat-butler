@@ -36,6 +36,10 @@ _Avoid_: Skipped meal, late meal
 A specific product or food a Cat eats, with its serving unit (can, pouch, gram, cup) and calories per unit; a Food may be marked as a treat or as free-fed.
 _Avoid_: Product, brand, item
 
+**Retired Food**:
+A Food the Household no longer buys; it leaves the pickers but keeps its details for past Feedings.
+_Avoid_: Deleted food, archived food
+
 **Intake**:
 The calories a Cat received in a day, summed from its Feedings.
 _Avoid_: Consumption, total
