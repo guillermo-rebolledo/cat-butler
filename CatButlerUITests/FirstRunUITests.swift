@@ -15,6 +15,11 @@ final class FirstRunUITests: XCTestCase {
     attachScreenshot("First Food", of: app)
     app.buttons["Save"].tap()
 
+    app.fillInFirstMeals()
+    XCTAssertTrue(app.buttons["Save"].isEnabled)
+    attachScreenshot("First Meals", of: app)
+    app.buttons["Save"].tap()
+
     XCTAssertTrue(app.staticTexts["Miso"].waitForExistence(timeout: 5))
     XCTAssertTrue(app.staticTexts["Kitten"].exists)
     XCTAssertTrue(app.staticTexts["9 lb"].exists)

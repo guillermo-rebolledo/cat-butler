@@ -39,13 +39,43 @@ extension XCUIApplication {
     grams.typeText("85")
   }
 
-  /// Finishes first run with Miso and Tuna pâté, then opens Settings → Foods.
+  /// First-run step 3: ¼ can at each of the four Meals suggested for a Kitten.
   @MainActor
-  func completeFirstRunAndOpenFoods() {
+  func fillInFirstMeals() {
+    XCTAssertTrue(navigationBars["Meals"].waitForExistence(timeout: 5))
+    // The Form only builds the rows on screen, so fill the empty ones while scrolling down.
+    let empty = textFields.matching(NSPredicate(format: "label == 'Amount' AND NOT (value CONTAINS '0.25')")).firstMatch
+    var filled = 0
+    for _ in 0..<12 where filled < 4 {
+      let top = navigationBars["Meals"].frame.maxY
+      let bottom = keyboards.firstMatch.exists ? keyboards.firstMatch.frame.minY : frame.maxY
+      if empty.exists, empty.frame.minY > top, empty.frame.maxY < bottom {
+        empty.tap()
+        empty.typeText("0.25")
+        filled += 1
+      } else {
+        collectionViews.firstMatch.swipeUp(velocity: .slow)
+      }
+    }
+    XCTAssertEqual(filled, 4)
+  }
+
+  /// Finishes first run with Miso, Tuna pâté and four Meals.
+  @MainActor
+  func completeFirstRun() {
     addFirstCat()
     buttons["Continue"].tap()
     fillInFirstFood()
     buttons["Save"].tap()
+    fillInFirstMeals()
+    buttons["Save"].tap()
+    XCTAssertTrue(tabBars.buttons["Today"].waitForExistence(timeout: 5))
+  }
+
+  /// Finishes first run, then opens Settings → Foods.
+  @MainActor
+  func completeFirstRunAndOpenFoods() {
+    completeFirstRun()
     openFoods()
   }
 
