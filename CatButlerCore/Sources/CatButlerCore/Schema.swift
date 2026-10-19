@@ -184,6 +184,42 @@ public func appDatabase() throws -> any DatabaseWriter {
     .execute(db)
     try #sql(#"CREATE INDEX "idx_foods_householdID" ON "foods"("householdID")"#).execute(db)
   }
+  // Only "catID" is a foreign key: SQLiteData shares a record with the Household only when it has a single
+  // foreign key, so the Food and Meal links are plain columns kept up by the app.
+  migrator.registerMigration("Create meals and feedings") { db in
+    try #sql(
+      """
+      CREATE TABLE "meals" (
+        "id" TEXT PRIMARY KEY NOT NULL ON CONFLICT REPLACE DEFAULT (uuid()),
+        "catID" TEXT NOT NULL REFERENCES "cats"("id") ON DELETE CASCADE,
+        "minuteOfDay" INTEGER NOT NULL,
+        "foodID" TEXT NOT NULL,
+        "amount" REAL NOT NULL,
+        "startsAt" TEXT NOT NULL
+      ) STRICT
+      """
+    )
+    .execute(db)
+    try #sql(
+      """
+      CREATE TABLE "feedings" (
+        "id" TEXT PRIMARY KEY NOT NULL ON CONFLICT REPLACE DEFAULT (uuid()),
+        "catID" TEXT NOT NULL REFERENCES "cats"("id") ON DELETE CASCADE,
+        "foodID" TEXT NOT NULL,
+        "amount" REAL NOT NULL,
+        "date" TEXT NOT NULL,
+        "mealID" TEXT,
+        "kcal" REAL NOT NULL
+      ) STRICT
+      """
+    )
+    .execute(db)
+    try #sql(#"CREATE INDEX "idx_meals_catID" ON "meals"("catID")"#).execute(db)
+    try #sql(#"CREATE INDEX "idx_meals_foodID" ON "meals"("foodID")"#).execute(db)
+    try #sql(#"CREATE INDEX "idx_feedings_catID_date" ON "feedings"("catID", "date")"#).execute(db)
+    try #sql(#"CREATE INDEX "idx_feedings_foodID" ON "feedings"("foodID")"#).execute(db)
+    try #sql(#"CREATE INDEX "idx_feedings_mealID" ON "feedings"("mealID")"#).execute(db)
+  }
   try migrator.migrate(database)
   return database
 }

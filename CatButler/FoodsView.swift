@@ -60,9 +60,11 @@ struct FoodEditor: View {
   @State private var isTreat: Bool
   @State private var isFreeFed: Bool
   @State private var isRetired: Bool
+  @FetchOne var mealCount = 0
 
   init(food: Food? = nil) {
     self.food = food
+    if let id = food?.id { _mealCount = FetchOne(wrappedValue: 0, Meal.where { $0.foodID.eq(id) }.count()) }
     _name = State(initialValue: food?.name ?? "")
     _servingUnit = State(initialValue: food?.servingUnit ?? .can)
     _kcal = State(initialValue: food?.kcalPerUnit)
@@ -97,10 +99,15 @@ struct FoodEditor: View {
       }
       Section {
         Toggle("Treat", isOn: $isTreat)
-        Toggle("Free-fed", isOn: $isFreeFed)
+        // A Meal's Feedings would never fulfil it if its Food were free-fed.
+        Toggle("Free-fed", isOn: $isFreeFed).disabled(!isFreeFed && mealCount > 0)
         if food != nil { Toggle("Retired", isOn: $isRetired) }
       } footer: {
-        if food != nil { Text("Retired Foods stay in past Feedings but leave the pickers.") }
+        if !isFreeFed && mealCount > 0 {
+          Text("A Meal uses this Food, so it can't be free-fed. Retired Foods stay in past Feedings but leave the pickers.")
+        } else if food != nil {
+          Text("Retired Foods stay in past Feedings but leave the pickers.")
+        }
       }
     }
     // An existing Food's kcal is per its old unit; make the owner re-enter it rather than silently reinterpret it.
@@ -128,7 +135,7 @@ struct FoodEditor: View {
           food.isTreat = isTreat
           food.isFreeFed = isFreeFed
           food.isRetired = isRetired
-          try Food.update(food).execute(db)
+          try db.updateFood(food)
         } else {
           try db.addFood(name: name, servingUnit: servingUnit, kcalPerUnit: kcalPerUnit, isTreat: isTreat, isFreeFed: isFreeFed)
         }
