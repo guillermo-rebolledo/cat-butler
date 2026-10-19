@@ -16,6 +16,13 @@ public struct CalorieTarget: Equatable, Sendable {
 
 public struct InvalidCalorieTarget: Error {}
 
+extension CalorieTarget {
+  /// Whether the owner's own target can be used: a positive number of kcal.
+  public static func isValid(_ kcal: Double) -> Bool {
+    kcal.isFinite && kcal > 0
+  }
+}
+
 /// The calories a Cat received in a day.
 public struct Intake: Equatable, Sendable {
   /// Everything, treats included.
@@ -57,7 +64,7 @@ extension Database {
 
   /// Sets the Cat's own Calorie Target, or clears it with nil to go back to the calculated one.
   public func overrideCalorieTarget(_ kcal: Double?, for catID: Cat.ID) throws {
-    if let kcal, !(kcal.isFinite && kcal > 0) { throw InvalidCalorieTarget() }
+    if let kcal, !CalorieTarget.isValid(kcal) { throw InvalidCalorieTarget() }
     try Cat.find(catID).update { $0.calorieTargetOverride = #bind(kcal) }.execute(self)
   }
 }

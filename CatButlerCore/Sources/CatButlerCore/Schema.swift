@@ -123,6 +123,7 @@ extension Database {
     return cat
   }
 
+  /// Records a Weigh-in, stored in kilograms whatever unit it was entered in.
   public func recordWeighIn(_ weight: Measurement<UnitMass>, for catID: Cat.ID, on date: Date) throws {
     @Dependency(\.uuid) var uuid
     try WeighIn.insert { WeighIn(id: uuid(), catID: catID, date: date, kilograms: weight.converted(to: .kilograms).value) }

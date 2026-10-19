@@ -63,28 +63,3 @@ final class CalorieUITests: XCTestCase {
     attachScreenshot("Treats and free-fed", of: app)
   }
 }
-
-extension XCUIApplication {
-  /// Any element whose label contains `text`, such as a line inside a row's combined label.
-  @MainActor
-  func containing(_ text: String) -> XCUIElement {
-    descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
-  }
-
-  /// Adds a Food from the Foods screen, labelled in kcal per can.
-  @MainActor
-  func addFood(_ name: String, kcal: String, treat: Bool = false, freeFed: Bool = false) {
-    buttons["Add Food"].tap()
-    let nameField = textFields["Name"]
-    XCTAssertTrue(nameField.waitForExistence(timeout: 5))
-    nameField.tap()
-    nameField.typeText(name)
-    let kcalField = textFields["Calories"]
-    kcalField.tap()
-    kcalField.typeText(kcal)
-    if treat { switches["Treat"].switches.firstMatch.tap() }
-    if freeFed { switches["Free-fed"].switches.firstMatch.tap() }
-    buttons["Save"].tap()
-    XCTAssertTrue(staticTexts[name].waitForExistence(timeout: 5))
-  }
-}
