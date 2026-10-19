@@ -63,7 +63,7 @@ struct FeedingTests {
     let feeding = try log(at: "2026-10-19T08:10:00-04:00")
     #expect(feeding.mealID == breakfast.id)
     #expect(try today().meals.map(\.state) == [.done(feeding)])
-    #expect(try today().offSchedule == [])
+    #expect(try today().otherFeedings == [])
   }
 
   @Test(arguments: ["2026-10-19T06:00:00-04:00", "2026-10-19T10:00:00-04:00"])
@@ -77,7 +77,7 @@ struct FeedingTests {
     try schedule("08:00")
     let feeding = try log(at: time)
     #expect(feeding.mealID == nil)
-    #expect(try today().offSchedule == [feeding])
+    #expect(try today().otherFeedings == [feeding])
   }
 
   @Test func twoNearbyMealsCompeteForOneFeeding() throws {
@@ -129,7 +129,7 @@ struct FeedingTests {
     let feeding = try log(at: "2026-10-19T08:00:00-04:00", food: kibble)
     #expect(feeding.mealID == nil)
     #expect(try today().meals.map(\.state) == [.missed])
-    #expect(try today().offSchedule == [feeding])
+    #expect(try today().otherFeedings == [feeding])
   }
 
   @Test func movingAFeedingOutOfTheWindowUnfulfilsItsMeal() throws {
@@ -140,7 +140,7 @@ struct FeedingTests {
     let moved = try database.read { try Feeding.find(feeding.id).fetchOne($0) }!
     #expect(moved.mealID == nil)
     #expect(try today().meals.map(\.state) == [.upcoming])
-    #expect(try today().offSchedule == [moved])
+    #expect(try today().otherFeedings == [moved])
   }
 
   @Test func movingAFeedingLaterFreesItsMealForOthers() throws {
@@ -193,9 +193,10 @@ struct FeedingTests {
     let stored = try database.read { try Feeding.order(by: \.date).fetchAll($0) }.map(\.mealID)
     #expect(stored == [breakfast.id, breakfast.id])
 
-    // Removing the Meal leaves its Feedings off-schedule.
+    // Removing the Meal leaves all its Feedings off-schedule.
     try database.write { try $0.saveMeals([], for: cat.id) }
-    #expect(try self.today().offSchedule.map(\.id) == [today.id])
+    #expect(try database.read { try Feeding.fetchAll($0) }.map(\.mealID) == [nil, nil])
+    #expect(try self.today().otherFeedings.map(\.id) == [today.id])
   }
 
   @Test func dayMeansTheLocalCalendarDay() throws {
@@ -205,13 +206,14 @@ struct FeedingTests {
     let afterMidnight = try log(at: "2026-10-19T00:30:00-04:00")
     let earlyToday = try log(at: "2026-10-19T03:00:00-04:00")
     #expect([yesterday.mealID, afterMidnight.mealID, earlyToday.mealID] == [nil, lateMeal.id, nil])
-    // Off-schedule Feedings either side of midnight belong to their own day.
+    // Feedings either side of midnight belong to their own day.
     let kibble = try database.write { try $0.addFood(name: "Kibble", servingUnit: .gram, kcalPerUnit: 3.8, isTreat: false, isFreeFed: true) }
     try log(at: "2026-10-18T23:00:00-04:00", food: kibble)
     let lastThingToday = try log(at: "2026-10-19T23:59:00-04:00", food: kibble)
     try log(at: "2026-10-20T00:00:00-04:00", food: kibble)
     #expect(try today().meals.map(\.state) == [.upcoming])
-    #expect(try today().offSchedule == [earlyToday, lastThingToday])
+    // Last night's Meal isn't on today's list, so its Feeding shows with the others.
+    #expect(try today().otherFeedings == [afterMidnight, earlyToday, lastThingToday])
   }
 
   @Test(arguments: [
@@ -236,7 +238,7 @@ struct FeedingTests {
       let day = try today()
       #expect(day.meals.map(\.time) == [instant("2026-10-20T08:00:00+09:00")])
       #expect(day.meals.map(\.state) == [.upcoming])
-      #expect(day.offSchedule == [])
+      #expect(day.otherFeedings == [])
       #expect(try log(at: "2026-10-20T08:05:00+09:00").mealID == breakfast.id)
     }
   }
@@ -245,5 +247,54 @@ struct FeedingTests {
     #expect(Meal.suggestedMinutesOfDay(for: .kitten).count == 4)
     #expect(Meal.suggestedMinutesOfDay(for: .adult) == [8 * 60, 18 * 60])
     #expect(Meal.suggestedMinutesOfDay(for: .senior) == [8 * 60, 18 * 60])
+  }
+
+  @Test func aFeedingMatchedBeforeATimeZoneChangeStillShowsToday() throws {
+    try schedule("08:00")
+    let feeding = try log(at: "2026-10-19T08:00:00-04:00")
+    // 12:00 in New York is 17:00 in London: London's 08:00 breakfast was at 03:00 New York time.
+    let day = try withDependencies { $0.calendar = calendar(in: "Europe/London") } operation: { try today() }
+    #expect(day.meals.map(\.state) == [.missed])
+    #expect(day.otherFeedings == [feeding])
+  }
+
+  @Test func makingAFoodFreeFedRematchesTodaysFeedings() throws {
+    let breakfast = try schedule("08:00")[0]
+    let feeding = try log(at: "2026-10-19T08:00:00-04:00")
+    var pate = pate
+    pate.isFreeFed = true
+    try database.write { try $0.updateFood(pate) }
+    #expect(try database.read { try Feeding.find(feeding.id).fetchOne($0) }?.mealID == nil)
+    #expect(try database.read { try Food.find(pate.id).fetchOne($0) }?.isFreeFed == true)
+
+    pate.isFreeFed = false
+    try database.write { try $0.updateFood(pate) }
+    #expect(try database.read { try Feeding.find(feeding.id).fetchOne($0) }?.mealID == breakfast.id)
+  }
+
+  @Test func aStaleMatchFromBeforeAScheduleChangeDoesNotBlockToday() throws {
+    var lateMeal = try schedule("21:00")[0]
+    try log(at: "2026-10-18T21:00:00-04:00")
+    lateMeal.minuteOfDay = 60
+    try database.write { try $0.saveMeals([lateMeal], for: cat.id) }
+    // Last night's Feeding kept its Meal, but it is 4 hours from 01:00, so 01:00 is still free.
+    #expect(try log(at: "2026-10-19T01:00:00-04:00").mealID == lateMeal.id)
+  }
+
+  @Test func timesSkippedOrRepeatedByDaylightSavingResolveToOneInstant() {
+    let newYork = calendar(in: "America/New_York")
+    let skipped = Meal(id: UUID(), catID: cat.id, minuteOfDay: 2 * 60 + 30, foodID: pate.id, amount: 1)
+    #expect(skipped.time(on: instant("2026-03-08T12:00:00-04:00"), calendar: newYork) == instant("2026-03-08T03:00:00-04:00"))
+    let repeated = Meal(id: UUID(), catID: cat.id, minuteOfDay: 90, foodID: pate.id, amount: 1)
+    #expect(repeated.time(on: instant("2026-11-01T12:00:00-05:00"), calendar: newYork) == instant("2026-11-01T01:30:00-04:00"))
+  }
+
+  @Test func theWindowIsRealTimeAcrossAClockChange() throws {
+    try schedule("03:00")
+    // 00:59 EST to 03:00 EDT is 1 h 1 min, though the clock moves 2 h 1 min.
+    let feeding = try withDependencies { $0.date.now = instant("2026-03-08T12:00:00-04:00") } operation: {
+      try log(at: "2026-03-08T00:59:00-05:00")
+    }
+    #expect(feeding.mealID != nil)
   }
 }

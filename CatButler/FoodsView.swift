@@ -128,7 +128,7 @@ struct FoodEditor: View {
           food.isTreat = isTreat
           food.isFreeFed = isFreeFed
           food.isRetired = isRetired
-          try Food.update(food).execute(db)
+          try db.updateFood(food)
         } else {
           try db.addFood(name: name, servingUnit: servingUnit, kcalPerUnit: kcalPerUnit, isTreat: isTreat, isFreeFed: isFreeFed)
         }

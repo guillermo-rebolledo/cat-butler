@@ -29,7 +29,7 @@ struct FeedingsToday: View {
     List {
       CatSummary(cat: cat)
       meals
-      offSchedule
+      otherFeedings
     }
     .sheet(item: $draft) { draft in
       NavigationStack { FeedingEditor(draft: draft) }
@@ -37,7 +37,7 @@ struct FeedingsToday: View {
     .task(id: cat.id) {
       // Reload every minute so Meals turn Missed on time and Today rolls over at midnight.
       while !Task.isCancelled {
-        await withErrorReporting { try await $day.load(FeedingDayRequest(catID: cat.id, minute: now)) }
+        await withErrorReporting { try await $day.load(FeedingDayRequest(catID: cat.id, refreshedAt: now)) }
         try? await Task.sleep(for: .seconds(60))
       }
     }
@@ -53,8 +53,11 @@ struct FeedingsToday: View {
           }
           Spacer()
           switch status.state {
-          case .upcoming:
+          // Only once the window opens: logged any earlier, it couldn't fulfil this Meal.
+          case .upcoming where now >= status.time.addingTimeInterval(-Meal.window):
             Button("Fed") { logNow(status.meal) }.buttonStyle(.borderedProminent)
+          case .upcoming:
+            EmptyView()
           case .missed:
             Text("Missed").foregroundStyle(.red)
             // Backdate it to the Meal's time if it was given but not logged.
@@ -72,9 +75,9 @@ struct FeedingsToday: View {
     }
   }
 
-  private var offSchedule: some View {
+  private var otherFeedings: some View {
     Section("Other Feedings") {
-      ForEach(day.offSchedule) { feeding in
+      ForEach(day.otherFeedings) { feeding in
         Button { draft = FeedingDraft(feeding) } label: {
           LabeledContent(text(feeding.amount, of: feeding.foodID)) { Text(feeding.date, style: .time) }
         }
@@ -104,8 +107,8 @@ struct FeedingsToday: View {
 
 private struct FeedingDayRequest: FetchKeyRequest {
   let catID: Cat.ID
-  /// Only here so a new minute makes a new request.
-  let minute: Date
+  /// Only here so each minute's reload is a new request.
+  let refreshedAt: Date
 
   func fetch(_ db: Database) throws -> FeedingDay {
     try db.feedingDay(for: catID)

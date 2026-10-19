@@ -1,20 +1,20 @@
 import XCTest
 
-/// The app runs at noon in UI tests: the 07:00 Meal is missed, 12:00 is due.
+/// The app runs at noon in UI tests: the 07:00 Meal is missed, 12:00 is due, 17:00 and 21:00 aren't yet.
 final class FeedingsUITests: XCTestCase {
   @MainActor
   func testOneTapFeedingFulfilsTheMealAndCanBeDeleted() {
     let app = XCUIApplication.launchedForTesting()
     app.completeFirstRun()
     XCTAssertTrue(app.staticTexts["Missed"].waitForExistence(timeout: 5))
-    XCTAssertEqual(app.buttons.matching(identifier: "Fed").count, 3)
+    XCTAssertEqual(app.buttons.matching(identifier: "Fed").count, 1)
     attachScreenshot("Today", of: app)
 
     app.buttons["Fed"].firstMatch.tap()
     // The time has a narrow no-break space before PM.
     let fed = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Fed at 12:00'")).firstMatch
     XCTAssertTrue(fed.waitForExistence(timeout: 5))
-    XCTAssertEqual(app.buttons.matching(identifier: "Fed").count, 2)
+    XCTAssertFalse(app.buttons["Fed"].exists)
     attachScreenshot("Fed", of: app)
 
     fed.tap()
@@ -22,7 +22,7 @@ final class FeedingsUITests: XCTestCase {
     XCTAssertEqual(app.textFields["Amount"].value as? String, "0.25")
     app.buttons["Delete Feeding"].tap()
     XCTAssertTrue(app.buttons["Fed"].waitForExistence(timeout: 5))
-    XCTAssertEqual(app.buttons.matching(identifier: "Fed").count, 3)
+    XCTAssertEqual(app.buttons.matching(identifier: "Fed").count, 1)
   }
 
   @MainActor
@@ -52,6 +52,28 @@ final class FeedingsUITests: XCTestCase {
     // 07:00 is gone, so nothing is missed.
     XCTAssertTrue(app.buttons["Fed"].waitForExistence(timeout: 5))
     XCTAssertFalse(app.staticTexts["Missed"].exists)
-    XCTAssertEqual(app.buttons.matching(identifier: "Fed").count, 3)
+  }
+
+  @MainActor
+  func testMealsCantUseAFreeFedFood() {
+    let app = XCUIApplication.launchedForTesting()
+    app.completeFirstRunAndOpenFoods()
+    app.buttons["Add Food"].tap()
+    let name = app.textFields["Name"]
+    XCTAssertTrue(name.waitForExistence(timeout: 5))
+    name.tap()
+    name.typeText("Kibble")
+    let kcal = app.textFields["Calories"]
+    kcal.tap()
+    kcal.typeText("4")
+    app.switches["Free-fed"].switches.firstMatch.tap()
+    app.buttons["Save"].tap()
+    XCTAssertTrue(app.staticTexts["Kibble"].waitForExistence(timeout: 5))
+
+    app.navigationBars.buttons.firstMatch.tap()
+    app.buttons["Meals"].tap()
+    app.buttons["Food, Tuna pâté"].firstMatch.tap()
+    XCTAssertTrue(app.buttons["Tuna pâté"].waitForExistence(timeout: 5))
+    XCTAssertFalse(app.buttons["Kibble"].exists)
   }
 }

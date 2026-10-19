@@ -63,7 +63,7 @@ public nonisolated struct Feeding: Hashable, Identifiable, Sendable {
   public internal(set) var kcal: Double
 }
 
-/// Each Meal of one local day with its status, plus the day's off-schedule Feedings.
+/// Each Meal of one local day with its status, plus the day's other Feedings.
 public struct FeedingDay: Equatable, Sendable {
   public enum State: Equatable, Sendable {
     case upcoming
@@ -79,18 +79,23 @@ public struct FeedingDay: Equatable, Sendable {
   }
 
   public var meals: [MealStatus] = []
-  public var offSchedule: [Feeding] = []
+  /// The day's Feedings that fulfilled none of the day's Meals: off-schedule ones, and any that
+  /// fulfilled last night's Meal after midnight or were matched in another time zone.
+  public var otherFeedings: [Feeding] = []
 
   public init() {}
 }
 
 extension Database {
-  /// Replaces a Cat's schedule with `meals`. Changes apply from today on; earlier days keep their Feedings' Meals.
+  /// Replaces a Cat's schedule with `meals`. New and moved Meals apply from today on; earlier days keep their
+  /// Feedings' Meals. Feedings of a removed Meal become off-schedule, on every day.
   public func saveMeals(_ meals: [Meal], for catID: Cat.ID) throws {
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
     let ids = meals.map(\.id)
-    try Meal.where { $0.catID.eq(catID) && !$0.id.in(ids) }.delete().execute(self)
+    let removed = try Meal.where { $0.catID.eq(catID) && !$0.id.in(ids) }.select(\.id).fetchAll(self)
+    try Feeding.where { $0.mealID.in(removed.map(Optional.some)) }.update { $0.mealID = #bind(nil) }.execute(self)
+    try Meal.where { $0.id.in(removed) }.delete().execute(self)
     for meal in meals { try Meal.upsert { meal }.execute(self) }
     try relinkFeedings(of: catID, from: calendar.startOfDay(for: now))
   }
@@ -117,6 +122,18 @@ extension Database {
       ? old.kcal : feeding.amount * (try kcalPerUnit(of: feeding.foodID))
     try Feeding.update(feeding).execute(self)
     try relinkFeedings(of: feeding.catID, from: min(old.date, feeding.date))
+  }
+
+  /// Saves an edited Food. Making it free-fed, or no longer free-fed, rematches today's Feedings.
+  public func updateFood(_ food: Food) throws {
+    @Dependency(\.calendar) var calendar
+    @Dependency(\.date.now) var now
+    let wasFreeFed = try Food.find(food.id).select(\.isFreeFed).fetchOne(self)
+    try Food.update(food).execute(self)
+    guard wasFreeFed != food.isFreeFed else { return }
+    for catID in try Cat.where { $0.householdID.eq(food.householdID) }.select(\.id).fetchAll(self) {
+      try relinkFeedings(of: catID, from: calendar.startOfDay(for: now))
+    }
   }
 
   public func deleteFeeding(_ id: Feeding.ID) throws {
@@ -148,7 +165,8 @@ extension Database {
         }
       return FeedingDay.MealStatus(meal: meal, time: time, state: state)
     }
-    result.offSchedule = feedings.filter { $0.mealID == nil && $0.date >= day.start && $0.date < day.end }
+    let done = Set(result.meals.compactMap { if case .done(let feeding) = $0.state { feeding.id } else { nil } })
+    result.otherFeedings = feedings.filter { !done.contains($0.id) && $0.date >= day.start && $0.date < day.end }
     return result
   }
 
@@ -174,7 +192,10 @@ extension Database {
     var fulfilled = Set<Occurrence>()
     for feeding in try Feeding.where({ $0.catID.eq(catID) && $0.date >= earlier && $0.date < start }).fetchAll(self) {
       guard let meal = meals.first(where: { $0.id == feeding.mealID }) else { continue }
-      fulfilled.insert(Occurrence(mealID: meal.id, time: meal.time(nearest: feeding.date, calendar: calendar)))
+      let time = meal.time(nearest: feeding.date, calendar: calendar)
+      // A match made before the Meal moved may no longer be in its window; it doesn't take the new time.
+      guard abs(time.timeIntervalSince(feeding.date)) <= Meal.window else { continue }
+      fulfilled.insert(Occurrence(mealID: meal.id, time: time))
     }
 
     let feedings = try Feeding.where { $0.catID.eq(catID) && $0.date >= start }.order { ($0.date, $0.id) }.fetchAll(self)
