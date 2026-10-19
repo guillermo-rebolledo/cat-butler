@@ -159,4 +159,11 @@ struct WeighInTests {
     #expect(try isDue(cat, at: "2026-11-18T23:59:00-05:00") == false)
     #expect(try isDue(cat, at: "2026-11-19T00:00:00-05:00") == true)
   }
+
+  @Test func aKittenDueOnItsBirthdayWaitsThirtyDaysWhateverTimeItWasBorn() throws {
+    // Fourteen days on is the first birthday, an Adult from the start of the day though born in the afternoon.
+    let cat = try addCat(born: "2025-10-25T15:00:00-04:00", weighedAt: "2026-10-11T09:00:00-04:00")
+    #expect(try isDue(cat, at: "2026-10-25T09:00:00-04:00") == false)
+    #expect(try isDue(cat, at: "2026-11-10T00:00:00-05:00") == true)
+  }
 }

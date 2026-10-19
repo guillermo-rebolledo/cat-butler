@@ -16,8 +16,8 @@ struct TodayView: View {
   }
 }
 
-/// The Cat, the turning-one notice once it's an Adult, Intake against the Calorie Target, today's Meals as done, upcoming or missed, the day's other Feedings,
-/// then its weight, with a prompt when a Weigh-in is due.
+/// The Cat, the turning-one notice once it's an Adult, Intake against the Calorie Target, today's Meals as done,
+/// upcoming or missed, the day's other Feedings, then its weight, with a prompt when a Weigh-in is due.
 struct FeedingsToday: View {
   let cat: Cat
   @Dependency(\.defaultDatabase) var database
@@ -31,7 +31,7 @@ struct FeedingsToday: View {
   var body: some View {
     List {
       CatSummary(cat: cat)
-      if let turningOne = today.turningOne { turningOneNotice(turningOne) }
+      if let notice = today.turningOneNotice { turningOneNotice(notice) }
       Section {
         NavigationLink { CalorieTargetView(cat: cat, target: today.target) } label: {
           IntakeSummary(intake: day.intake, target: today.target)
@@ -58,24 +58,24 @@ struct FeedingsToday: View {
     }
   }
 
-  private func turningOneNotice(_ turningOne: TurningOne) -> some View {
+  private func turningOneNotice(_ notice: TurningOneNotice) -> some View {
     Section {
       VStack(alignment: .leading, spacing: 4) {
         Text("Kitten → Adult").font(.headline)
-        Text(turningOneText(turningOne))
+        Text(turningOneText(notice))
       }
-      Button("Dismiss") { withErrorReporting { try database.write { try $0.dismissTurningOne(for: cat.id) } } }
+      Button("Dismiss") { withErrorReporting { try database.write { try $0.dismissTurningOneNotice(for: cat.id) } } }
     }
   }
 
-  private func turningOneText(_ turningOne: TurningOne) -> String {
-    switch (turningOne.before, turningOne.after) {
+  private func turningOneText(_ notice: TurningOneNotice) -> String {
+    switch (notice.before, notice.after) {
     case (_, let after?) where after.isOverride:
-      String(localized: "\(cat.name) is one. Your own Calorie Target, \(after.text), stays; check with your vet that it still fits. Weigh-ins are now monthly.")
+      String(localized: "\(cat.name) has turned one. Your own Calorie Target, \(after.text), stays; check with your vet that it still fits. Weigh-ins are now monthly.")
     case (let before?, let after?):
-      String(localized: "\(cat.name) is one. The Calorie Target goes from \(before.text) to \(after.text); check with your vet. Weigh-ins are now monthly.")
+      String(localized: "\(cat.name) has turned one. The Calorie Target goes from \(before.text) to \(after.text); check with your vet. Weigh-ins are now monthly.")
     default:
-      String(localized: "\(cat.name) is one. Check with your vet how much to feed an Adult. Weigh-ins are now monthly.")
+      String(localized: "\(cat.name) has turned one. Check with your vet how much to feed an Adult. Weigh-ins are now monthly.")
     }
   }
 
@@ -167,7 +167,7 @@ private struct TodayRequest: FetchKeyRequest {
     var day = FeedingDay()
     var target: CalorieTarget?
     var isWeighInDue = false
-    var turningOne: TurningOne?
+    var turningOneNotice: TurningOneNotice?
   }
 
   let catID: Cat.ID
@@ -177,7 +177,7 @@ private struct TodayRequest: FetchKeyRequest {
   func fetch(_ db: Database) throws -> Value {
     Value(
       day: try db.feedingDay(for: catID), target: try db.calorieTarget(for: catID), isWeighInDue: try db.isWeighInDue(for: catID),
-      turningOne: try db.turningOne(for: catID)
+      turningOneNotice: try db.turningOneNotice(for: catID)
     )
   }
 }

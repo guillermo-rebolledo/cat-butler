@@ -19,7 +19,7 @@ public nonisolated struct Cat: Hashable, Identifiable, Sendable {
   /// The owner's own daily Calorie Target, e.g. from the vet, replacing the calculated one.
   public var calorieTargetOverride: Double?
   /// The owner dismissed the Kitten → Adult notice, or never needed it: the Cat was added already grown.
-  public var isTurningOneDismissed: Bool
+  public var isTurningOneNoticeDone: Bool
 
   public func lifeStage(on date: Date) -> LifeStage {
     @Dependency(\.calendar) var calendar
@@ -129,7 +129,7 @@ extension Database {
       birthdate: birthdate,
       isNeutered: isNeutered,
       calorieTargetOverride: nil,
-      isTurningOneDismissed: LifeStage(birthdate: birthdate, on: now, calendar: calendar) != .kitten
+      isTurningOneNoticeDone: LifeStage(birthdate: birthdate, on: now, calendar: calendar) != .kitten
     )
     try Cat.insert { cat }.execute(self)
     try recordWeighIn(weight, for: cat.id, on: now)
@@ -240,8 +240,11 @@ public func appDatabase() throws -> any DatabaseWriter {
     try #sql(#"ALTER TABLE "cats" ADD COLUMN "calorieTargetOverride" REAL"#).execute(db)
     try #sql(#"ALTER TABLE "feedings" ADD COLUMN "eatenFraction" REAL"#).execute(db)
   }
+  // ON CONFLICT REPLACE, so a Cat synced from an older build gets the default. Cats already stored and past their
+  // first birthday turned one before the notice existed, so they never get it.
   migrator.registerMigration("Add the turning-one notice") { db in
-    try #sql(#"ALTER TABLE "cats" ADD COLUMN "isTurningOneDismissed" INTEGER NOT NULL ON CONFLICT REPLACE DEFAULT 0"#).execute(db)
+    try #sql(#"ALTER TABLE "cats" ADD COLUMN "isTurningOneNoticeDone" INTEGER NOT NULL ON CONFLICT REPLACE DEFAULT 0"#).execute(db)
+    try #sql(#"UPDATE "cats" SET "isTurningOneNoticeDone" = 1 WHERE "birthdate" <= datetime('now', '-1 year')"#).execute(db)
   }
   try migrator.migrate(database)
   return database
