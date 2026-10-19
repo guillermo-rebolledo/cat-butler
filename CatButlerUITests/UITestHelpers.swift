@@ -145,8 +145,8 @@ extension XCUIApplication {
 }
 
 extension XCUIElement {
-  @MainActor
   /// Replaces the field's value with `text`.
+  @MainActor
   func clearAndType(_ text: String) {
     // At the right edge, so the caret lands after the current value.
     coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5)).tap()
