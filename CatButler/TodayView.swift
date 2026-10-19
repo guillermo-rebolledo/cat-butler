@@ -16,7 +16,7 @@ struct TodayView: View {
   }
 }
 
-/// The Cat, Intake against the Calorie Target, today's Meals as done, upcoming or missed, the day's other Feedings,
+/// The Cat, the turning-one notice once it's an Adult, Intake against the Calorie Target, today's Meals as done, upcoming or missed, the day's other Feedings,
 /// then its weight, with a prompt when a Weigh-in is due.
 struct FeedingsToday: View {
   let cat: Cat
@@ -31,6 +31,7 @@ struct FeedingsToday: View {
   var body: some View {
     List {
       CatSummary(cat: cat)
+      if let turningOne = today.turningOne { turningOneNotice(turningOne) }
       Section {
         NavigationLink { CalorieTargetView(cat: cat, target: today.target) } label: {
           IntakeSummary(intake: day.intake, target: today.target)
@@ -54,6 +55,27 @@ struct FeedingsToday: View {
         await withErrorReporting { try await $today.load(TodayRequest(catID: cat.id, refreshedAt: now)) }
         try? await Task.sleep(for: .seconds(60))
       }
+    }
+  }
+
+  private func turningOneNotice(_ turningOne: TurningOne) -> some View {
+    Section {
+      VStack(alignment: .leading, spacing: 4) {
+        Text("Kitten → Adult").font(.headline)
+        Text(turningOneText(turningOne))
+      }
+      Button("Dismiss") { withErrorReporting { try database.write { try $0.dismissTurningOne(for: cat.id) } } }
+    }
+  }
+
+  private func turningOneText(_ turningOne: TurningOne) -> String {
+    switch (turningOne.before, turningOne.after) {
+    case (_, let after?) where after.isOverride:
+      String(localized: "\(cat.name) is one. Your own Calorie Target, \(after.text), stays; check with your vet that it still fits. Weigh-ins are now monthly.")
+    case (let before?, let after?):
+      String(localized: "\(cat.name) is one. The Calorie Target goes from \(before.text) to \(after.text); check with your vet. Weigh-ins are now monthly.")
+    default:
+      String(localized: "\(cat.name) is one. Check with your vet how much to feed an Adult. Weigh-ins are now monthly.")
     }
   }
 
@@ -145,6 +167,7 @@ private struct TodayRequest: FetchKeyRequest {
     var day = FeedingDay()
     var target: CalorieTarget?
     var isWeighInDue = false
+    var turningOne: TurningOne?
   }
 
   let catID: Cat.ID
@@ -152,7 +175,10 @@ private struct TodayRequest: FetchKeyRequest {
   let refreshedAt: Date
 
   func fetch(_ db: Database) throws -> Value {
-    Value(day: try db.feedingDay(for: catID), target: try db.calorieTarget(for: catID), isWeighInDue: try db.isWeighInDue(for: catID))
+    Value(
+      day: try db.feedingDay(for: catID), target: try db.calorieTarget(for: catID), isWeighInDue: try db.isWeighInDue(for: catID),
+      turningOne: try db.turningOne(for: catID)
+    )
   }
 }
 
