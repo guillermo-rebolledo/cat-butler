@@ -56,9 +56,13 @@ extension Database {
   public func calorieTarget(for catID: Cat.ID) throws -> CalorieTarget? {
     @Dependency(\.date.now) var now
     guard let cat = try Cat.find(catID).fetchOne(self) else { throw NotFound() }
+    return try calorieTarget(for: cat, as: cat.lifeStage(on: now))
+  }
+
+  func calorieTarget(for cat: Cat, as lifeStage: LifeStage) throws -> CalorieTarget? {
     if let kcal = cat.calorieTargetOverride { return CalorieTarget(kcal: kcal, isOverride: true) }
-    guard let weighIn = try WeighIn.latest(for: catID).fetchOne(self) else { return nil }
-    let kcal = CalorieTarget.kcal(kilograms: weighIn.kilograms, lifeStage: cat.lifeStage(on: now), isNeutered: cat.isNeutered)
+    guard let weighIn = try WeighIn.latest(for: cat.id).fetchOne(self) else { return nil }
+    let kcal = CalorieTarget.kcal(kilograms: weighIn.kilograms, lifeStage: lifeStage, isNeutered: cat.isNeutered)
     return CalorieTarget(kcal: kcal, isOverride: false)
   }
 

@@ -8,6 +8,7 @@ import Testing
 @Suite(
   .dependency(\.date.now, Date(timeIntervalSince1970: 1_800_000_000)),
   .dependency(\.uuid, .incrementing),
+  .dependency(\.calendar, calendar(in: "America/New_York")),
   .dependencies { $0.defaultDatabase = try appDatabase() }
 )
 struct FirstRunTests {
