@@ -16,7 +16,7 @@ struct TodayView: View {
   }
 }
 
-/// The Cat, today's Meals as done, upcoming or missed, then any off-schedule Feedings.
+/// The Cat, today's Meals as done, upcoming or missed, then the day's other Feedings.
 struct FeedingsToday: View {
   let cat: Cat
   @Dependency(\.defaultDatabase) var database

@@ -258,9 +258,21 @@ struct FeedingTests {
     #expect(day.otherFeedings == [feeding])
   }
 
+  @Test func aFoodUsedByAMealCantBecomeFreeFed() throws {
+    try schedule("08:00")
+    var pate = pate
+    pate.isFreeFed = true
+    #expect(throws: FoodUsedByMeal.self) { try database.write { try $0.updateFood(pate) } }
+    #expect(try database.read { try Food.find(pate.id).fetchOne($0) }?.isFreeFed == false)
+  }
+
   @Test func makingAFoodFreeFedRematchesTodaysFeedings() throws {
-    let breakfast = try schedule("08:00")[0]
+    // Breakfast is chicken, but pâté given at 08:00 still fulfils it.
+    let chicken = try database.write { try $0.addFood(name: "Chicken", servingUnit: .pouch, kcalPerUnit: 70, isTreat: false, isFreeFed: false) }
+    let breakfast = Meal(id: UUID(), catID: cat.id, minuteOfDay: 8 * 60, foodID: chicken.id, amount: 1)
+    try database.write { try $0.saveMeals([breakfast], for: cat.id) }
     let feeding = try log(at: "2026-10-19T08:00:00-04:00")
+    #expect(feeding.mealID == breakfast.id)
     var pate = pate
     pate.isFreeFed = true
     try database.write { try $0.updateFood(pate) }

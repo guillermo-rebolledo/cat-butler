@@ -63,6 +63,8 @@ public nonisolated struct Feeding: Hashable, Identifiable, Sendable {
   public internal(set) var kcal: Double
 }
 
+public struct FoodUsedByMeal: Error {}
+
 /// Each Meal of one local day with its status, plus the day's other Feedings.
 public struct FeedingDay: Equatable, Sendable {
   public enum State: Equatable, Sendable {
@@ -125,10 +127,14 @@ extension Database {
   }
 
   /// Saves an edited Food. Making it free-fed, or no longer free-fed, rematches today's Feedings.
+  /// A Food some Meal defaults to can't become free-fed, since its Feedings would never fulfil that Meal.
   public func updateFood(_ food: Food) throws {
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
     let wasFreeFed = try Food.find(food.id).select(\.isFreeFed).fetchOne(self)
+    if food.isFreeFed, wasFreeFed == false, try Meal.where({ $0.foodID.eq(food.id) }).fetchCount(self) > 0 {
+      throw FoodUsedByMeal()
+    }
     try Food.update(food).execute(self)
     guard wasFreeFed != food.isFreeFed else { return }
     for catID in try Cat.where { $0.householdID.eq(food.householdID) }.select(\.id).fetchAll(self) {

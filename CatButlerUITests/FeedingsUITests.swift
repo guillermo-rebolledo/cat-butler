@@ -76,4 +76,13 @@ final class FeedingsUITests: XCTestCase {
     XCTAssertTrue(app.buttons["Tuna pâté"].waitForExistence(timeout: 5))
     XCTAssertFalse(app.buttons["Kibble"].exists)
   }
+
+  @MainActor
+  func testAFoodAMealUsesCantBecomeFreeFed() {
+    let app = XCUIApplication.launchedForTesting()
+    app.completeFirstRunAndOpenFoods()
+    app.staticTexts["Tuna pâté"].tap()
+    XCTAssertTrue(app.staticTexts["A Meal uses this Food, so it can't be free-fed. Retired Foods stay in past Feedings but leave the pickers."].waitForExistence(timeout: 5))
+    XCTAssertFalse(app.switches["Free-fed"].isEnabled)
+  }
 }
