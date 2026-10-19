@@ -45,11 +45,11 @@ A Food the Household no longer buys; it leaves the pickers but keeps its details
 _Avoid_: Deleted food, archived food
 
 **Intake**:
-The calories a Cat received in a day, summed from its Feedings.
+The calories a Cat ate in a day, summed from its Feedings and how much of each it ate; approximate when any was of a free-fed Food.
 _Avoid_: Consumption, total
 
 **Calorie Target**:
-The daily calories a Cat should eat, calculated from its weight, Life Stage and neuter status.
+The daily calories a Cat should eat, estimated from its latest Weigh-in, Life Stage and neuter status, unless the owner sets their own (e.g. the vet's number).
 _Avoid_: Recommendation, portion advice
 
 ### Health
