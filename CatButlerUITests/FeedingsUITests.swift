@@ -1,12 +1,14 @@
 import XCTest
 
-/// The app runs at noon in UI tests: the 07:00 Meal is missed, 12:00 is due, 17:00 and 21:00 aren't yet.
+/// The app runs at noon in UI tests, so first run sets the Meals up then: the 07:00 Meal starts tomorrow,
+/// 12:00 is due, 17:00 and 21:00 aren't yet.
 final class FeedingsUITests: XCTestCase {
   @MainActor
   func testOneTapFeedingFulfilsTheMealAndCanBeDeleted() {
     let app = XCUIApplication.launchedForTesting()
     app.completeFirstRun()
-    XCTAssertTrue(app.staticTexts["Missed"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.staticTexts["From tomorrow"].waitForExistence(timeout: 5))
+    XCTAssertFalse(app.staticTexts["Missed"].exists)
     XCTAssertEqual(app.buttons.matching(identifier: "Fed").count, 1)
     attachScreenshot("Today", of: app)
 
@@ -26,7 +28,7 @@ final class FeedingsUITests: XCTestCase {
   }
 
   @MainActor
-  func testLoggingAMissedMealBackdatesItToTheMealTime() {
+  func testLoggingAnEarlierMealBackdatesItToTheMealTime() {
     let app = XCUIApplication.launchedForTesting()
     app.completeFirstRun()
     XCTAssertTrue(app.buttons["Log"].waitForExistence(timeout: 5))
@@ -35,7 +37,7 @@ final class FeedingsUITests: XCTestCase {
     app.buttons["Save"].tap()
 
     XCTAssertTrue(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Fed at 7:00'")).firstMatch.waitForExistence(timeout: 5))
-    XCTAssertFalse(app.staticTexts["Missed"].exists)
+    XCTAssertFalse(app.staticTexts["From tomorrow"].exists)
   }
 
   @MainActor
@@ -49,9 +51,9 @@ final class FeedingsUITests: XCTestCase {
     app.buttons["Save"].tap()
 
     app.tabBars.buttons["Today"].tap()
-    // 07:00 is gone, so nothing is missed.
+    // 07:00 is gone.
     XCTAssertTrue(app.buttons["Fed"].waitForExistence(timeout: 5))
-    XCTAssertFalse(app.staticTexts["Missed"].exists)
+    XCTAssertFalse(app.staticTexts["From tomorrow"].exists)
   }
 
   @MainActor

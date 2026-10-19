@@ -12,13 +12,18 @@ public nonisolated struct Meal: Hashable, Identifiable, Sendable {
   public var foodID: Food.ID
   /// In the Food's serving unit.
   public var amount: Double
+  /// The Meal counts from here: a time whose window ended earlier isn't Missed. Set when the Meal is added or
+  /// moved, unless it was Missed then.
+  public internal(set) var startsAt: Date
 
+  /// `startsAt` is set when the Meal is saved.
   public init(id: UUID, catID: Cat.ID, minuteOfDay: Int, foodID: Food.ID, amount: Double) {
     self.id = id
     self.catID = catID
     self.minuteOfDay = minuteOfDay
     self.foodID = foodID
     self.amount = amount
+    startsAt = .distantPast
   }
 
   /// A Feeding fulfils a Meal up to this long before or after it.
@@ -70,6 +75,8 @@ public struct FeedingDay: Equatable, Sendable {
   public enum State: Equatable, Sendable {
     case upcoming
     case missed
+    /// Its window passed before the Meal was added or moved, so it counts from tomorrow.
+    case startsTomorrow
     case done(Feeding)
   }
 
@@ -89,16 +96,27 @@ public struct FeedingDay: Equatable, Sendable {
 }
 
 extension Database {
-  /// Replaces a Cat's schedule with `meals`. New and moved Meals apply from today on; earlier days keep their
+  /// Replaces a Cat's schedule with `meals`. New and moved Meals apply from now on; earlier days keep their
   /// Feedings' Meals. Feedings of a removed Meal become off-schedule, on every day.
   public func saveMeals(_ meals: [Meal], for catID: Cat.ID) throws {
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
     let ids = meals.map(\.id)
-    let removed = try Meal.where { $0.catID.eq(catID) && !$0.id.in(ids) }.select(\.id).fetchAll(self)
+    let before = try feedingDay(for: catID).meals
+    let removed = before.map(\.id).filter { !ids.contains($0) }
     try Feeding.where { $0.mealID.in(removed.map(Optional.some)) }.update { $0.mealID = #bind(nil) }.execute(self)
     try Meal.where { $0.id.in(removed) }.delete().execute(self)
-    for meal in meals { try Meal.upsert { meal }.execute(self) }
+    for var meal in meals {
+      // New and moved Meals start now, but a Missed one keeps its start: editing or moving it mustn't hide the miss.
+      // ponytail: each save only sees the state at that moment, so a Meal moved away and back, or moved after it was
+      // fed and then unfed, shows From tomorrow rather than Missed for that day; record each day's misses if it matters.
+      if let old = before.first(where: { $0.id == meal.id }), old.meal.minuteOfDay == meal.minuteOfDay || old.state == .missed {
+        meal.startsAt = old.meal.startsAt
+      } else {
+        meal.startsAt = now
+      }
+      try Meal.upsert { meal }.execute(self)
+    }
     try relinkFeedings(of: catID, from: calendar.startOfDay(for: now))
   }
 
@@ -161,11 +179,12 @@ extension Database {
     var result = FeedingDay()
     result.meals = meals.map { meal in
       let time = meal.time(on: now, calendar: calendar)
+      let windowEnd = time.addingTimeInterval(Meal.window)
       let state: FeedingDay.State =
         if let feeding = feedings.first(where: { $0.mealID == meal.id && abs($0.date.timeIntervalSince(time)) <= Meal.window }) {
           .done(feeding)
-        } else if now > time.addingTimeInterval(Meal.window) {
-          .missed
+        } else if now > windowEnd {
+          windowEnd < meal.startsAt ? .startsTomorrow : .missed
         } else {
           .upcoming
         }

@@ -60,9 +60,10 @@ struct FeedingsToday: View {
             EmptyView()
           case .missed:
             Text("Missed").foregroundStyle(.red)
-            // Backdate it to the Meal's time if it was given but not logged.
-            Button("Log") { draft = FeedingDraft(catID: cat.id, meal: status.meal, date: status.time) }
-              .buttonStyle(.bordered)
+            logButton(status)
+          case .startsTomorrow:
+            Text("From tomorrow").foregroundStyle(.secondary)
+            logButton(status)
           case .done(let feeding):
             Button { draft = FeedingDraft(feeding) } label: {
               Label { Text(feeding.date, style: .time) } icon: { Image(systemName: "checkmark.circle.fill") }
@@ -73,6 +74,12 @@ struct FeedingsToday: View {
         }
       }
     }
+  }
+
+  /// Backdates a Feeding to the Meal's time, for one given but not logged.
+  private func logButton(_ status: FeedingDay.MealStatus) -> some View {
+    Button("Log") { draft = FeedingDraft(catID: cat.id, meal: status.meal, date: status.time) }
+      .buttonStyle(.bordered)
   }
 
   private var otherFeedings: some View {

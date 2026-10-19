@@ -37,16 +37,23 @@ struct FeedingTests {
     }
   }
 
-  /// Saves Meals for Miso at the given "HH:mm" times, each ½ can of pâté.
+  /// Saves Meals for Miso at the given "HH:mm" times, each ½ can of pâté. By default they were saved
+  /// long ago, so today's earlier times can be Missed.
   @discardableResult
-  func schedule(_ times: String...) throws -> [Meal] {
+  func schedule(_ times: String..., savedAt: String = "2026-01-01T00:00:00-05:00") throws -> [Meal] {
     @Dependency(\.uuid) var uuid
     let meals = times.map { time in
       let parts = time.split(separator: ":").map { Int($0)! }
       return Meal(id: uuid(), catID: cat.id, minuteOfDay: parts[0] * 60 + parts[1], foodID: pate.id, amount: 0.5)
     }
-    try database.write { try $0.saveMeals(meals, for: cat.id) }
+    try save(meals, at: savedAt)
     return meals
+  }
+
+  func save(_ meals: [Meal], at iso8601: String) throws {
+    try withDependencies { $0.date.now = instant(iso8601) } operation: {
+      try database.write { try $0.saveMeals(meals, for: cat.id) }
+    }
   }
 
   @discardableResult
@@ -114,6 +121,62 @@ struct FeedingTests {
     #expect(try today().meals.map(\.state) == [.upcoming, .upcoming])
     let aSecondLater = try withDependencies { $0.date.now = instant("2026-10-19T12:00:01-04:00") } operation: { try today() }
     #expect(aSecondLater.meals.map(\.state) == [.missed, .upcoming])
+  }
+
+  @Test func aMealAddedAfterItsWindowPassedIsntMissedUntilTomorrow() throws {
+    try schedule("08:00", "11:00", savedAt: "2026-10-19T12:00:00-04:00")
+    #expect(try today().meals.map(\.state) == [.startsTomorrow, .upcoming])
+    let tomorrow = try withDependencies { $0.date.now = instant("2026-10-20T13:00:01-04:00") } operation: { try today() }
+    #expect(tomorrow.meals.map(\.state) == [.missed, .missed])
+  }
+
+  @Test(arguments: ["2026-10-19T06:00:00-04:00", "2026-10-19T12:00:00-04:00"])
+  func aMealAddedBeforeItsWindowEndsCanBeMissed(savedAt: String) throws {
+    try schedule("11:00", savedAt: savedAt)
+    let afterTheWindow = try withDependencies { $0.date.now = instant("2026-10-19T13:00:01-04:00") } operation: { try today() }
+    #expect(afterTheWindow.meals.map(\.state) == [.missed])
+  }
+
+  @Test func aBackdatedFeedingStillFulfilsAMealAddedLater() throws {
+    try schedule("08:00", savedAt: "2026-10-19T12:00:00-04:00")
+    let feeding = try log(at: "2026-10-19T08:00:00-04:00")
+    #expect(try today().meals.map(\.state) == [.done(feeding)])
+  }
+
+  @Test func movingAMealThatWasntDueYetStartsItAgain() throws {
+    var meals = try schedule("08:00", "09:00", "18:00")
+    meals[0].amount = 1
+    // 09:00 was already Missed: nudging it doesn't hide that.
+    meals[1].minuteOfDay = 9 * 60 + 15
+    meals[2].minuteOfDay = 9 * 60 + 30
+    try save(meals, at: "2026-10-19T12:00:00-04:00")
+    #expect(try today().meals.map(\.state) == [.missed, .missed, .startsTomorrow])
+  }
+
+  @Test func aMealStartingTomorrowStillDoesWhenMovedToAnotherPassedTime() throws {
+    var meal = try schedule("08:00", savedAt: "2026-10-19T12:00:00-04:00")[0]
+    meal.minuteOfDay = 10 * 60 + 30
+    try save([meal], at: "2026-10-19T12:45:00-04:00")
+    let day = try withDependencies { $0.date.now = instant("2026-10-19T12:45:00-04:00") } operation: { try today() }
+    #expect(day.meals.map(\.state) == [.startsTomorrow])
+  }
+
+  @Test func aFedMealMovedAwayFromItsFeedingIsntMissed() throws {
+    var meal = try schedule("07:00")[0]
+    try log(at: "2026-10-19T07:00:00-04:00")
+    meal.minuteOfDay = 10 * 60
+    try save([meal], at: "2026-10-19T12:45:00-04:00")
+    let day = try withDependencies { $0.date.now = instant("2026-10-19T12:45:00-04:00") } operation: { try today() }
+    #expect(day.meals.map(\.state) == [.startsTomorrow])
+  }
+
+  @Test func savingTheScheduleDoesntRestartMealsThatDidntMove() throws {
+    let meals = try schedule("08:00")
+    let feeding = try log(at: "2026-10-19T08:05:00-04:00")
+    try save(meals, at: "2026-10-19T12:00:00-04:00")
+    // Logged by mistake: the Meal was Missed after all.
+    try database.write { try $0.deleteFeeding(feeding.id) }
+    #expect(try today().meals.map(\.state) == [.missed])
   }
 
   @Test func aLateFeedingStopsAMealBeingMissed() throws {
@@ -189,7 +252,7 @@ struct FeedingTests {
     #expect([yesterday.mealID, today.mealID] == [breakfast.id, nil])
 
     breakfast.minuteOfDay = 11 * 60
-    try database.write { try $0.saveMeals([breakfast], for: cat.id) }
+    try save([breakfast], at: "2026-10-19T12:00:00-04:00")
     let stored = try database.read { try Feeding.order(by: \.date).fetchAll($0) }.map(\.mealID)
     #expect(stored == [breakfast.id, breakfast.id])
 

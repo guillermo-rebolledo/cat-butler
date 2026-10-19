@@ -194,7 +194,8 @@ public func appDatabase() throws -> any DatabaseWriter {
         "catID" TEXT NOT NULL REFERENCES "cats"("id") ON DELETE CASCADE,
         "minuteOfDay" INTEGER NOT NULL,
         "foodID" TEXT NOT NULL,
-        "amount" REAL NOT NULL
+        "amount" REAL NOT NULL,
+        "startsAt" TEXT NOT NULL
       ) STRICT
       """
     )

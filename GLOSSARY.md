@@ -33,7 +33,7 @@ A Feeding that fulfilled no Meal: one not within 2 hours of a Meal still unfulfi
 _Avoid_: Extra feeding, snack
 
 **Missed Meal**:
-A Meal whose window passed without a Feeding fulfilling it.
+A Meal whose window passed without a Feeding fulfilling it. A Meal added or moved after its window passed isn't Missed until the next day, unless it was already Missed.
 _Avoid_: Skipped meal, late meal
 
 **Food**:
