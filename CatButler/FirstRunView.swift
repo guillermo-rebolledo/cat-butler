@@ -38,14 +38,7 @@ struct FirstRunView: View {
         }
         Section {
           Toggle("Neutered", isOn: $isNeutered)
-          LabeledContent("Weight") {
-            HStack {
-              TextField("0", value: $weight, format: .number)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-              Text(weightUnit.symbol)
-            }
-          }
+          NumberField("Weight", value: $weight, unit: weightUnit.symbol)
         }
       }
       .navigationTitle("Your Cat")
