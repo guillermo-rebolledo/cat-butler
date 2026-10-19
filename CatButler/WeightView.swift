@@ -78,8 +78,7 @@ struct WeighInEditor: View {
     @Dependency(\.date.now) var now
     self.catID = catID
     self.weighIn = weighIn
-    // To 0.01, as `weightText` shows it, rather than the long decimal a unit conversion leaves.
-    _weight = State(initialValue: weighIn.map { ($0.weight.converted(to: .catWeight()).value * 100).rounded() / 100 })
+    _weight = State(initialValue: weighIn?.weight.converted(to: .catWeight()).value)
     _date = State(initialValue: weighIn?.date ?? now)
   }
 

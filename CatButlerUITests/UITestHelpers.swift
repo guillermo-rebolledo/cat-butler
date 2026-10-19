@@ -103,11 +103,54 @@ extension XCUIApplication {
   }
 
   @MainActor
+  func openWeightChart() {
+    swipeUp()
+    buttons["Weight Chart"].tap()
+    XCTAssertTrue(navigationBars["Miso's Weight"].waitForExistence(timeout: 5))
+  }
+
+  /// Fills in and saves the open Weigh-in editor, dated the 15th `monthsAgo` months back, or today when nil.
+  @MainActor
+  func fillInWeighIn(_ pounds: String, monthsAgo: Int? = nil) {
+    XCTAssertTrue(navigationBars["Add Weigh-in"].waitForExistence(timeout: 5))
+    let weight = textFields["Weight"]
+    weight.tap()
+    weight.typeText(pounds)
+    if let monthsAgo { pickDay15(monthsAgo: monthsAgo) }
+    buttons["Save"].tap()
+  }
+
+  /// The 15th exists in every month, so this works whatever today's date is.
+  @MainActor
+  func pickDay15(monthsAgo: Int) {
+    datePickers.firstMatch.tap()
+    let previous = buttons["Previous Month"]
+    XCTAssertTrue(previous.waitForExistence(timeout: 5))
+    for _ in 0..<monthsAgo { previous.tap() }
+    // By the month's name, so the tap waits out the page animation instead of landing on the month going away.
+    let month = Calendar.current.date(byAdding: .month, value: -monthsAgo, to: .now)!.formatted(.dateTime.month(.wide))
+    let day = buttons.matching(NSPredicate(format: "label ENDSWITH %@", "\(month) 15")).firstMatch
+    XCTAssertTrue(day.waitForExistence(timeout: 5))
+    day.tap()
+    buttons["PopoverDismissRegion"].tap()
+  }
+
+  @MainActor
   func openFoods() {
     XCTAssertTrue(tabBars.buttons["Settings"].waitForExistence(timeout: 5))
     tabBars.buttons["Settings"].tap()
     buttons["Foods"].tap()
     XCTAssertTrue(navigationBars["Foods"].waitForExistence(timeout: 5))
+  }
+}
+
+extension XCUIElement {
+  @MainActor
+  /// Replaces the field's value with `text`.
+  func clearAndType(_ text: String) {
+    // At the right edge, so the caret lands after the current value.
+    coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5)).tap()
+    typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 8) + text)
   }
 }
 

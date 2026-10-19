@@ -51,10 +51,7 @@ final class CalorieUITests: XCTestCase {
       XCTAssertTrue(app.navigationBars["Log Feeding"].waitForExistence(timeout: 5))
       app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Food,'")).firstMatch.tap()
       app.buttons[food].tap()
-      let field = app.textFields["Amount"]
-      // At the right edge, so the caret lands after the Meal's ¼, which is then replaced.
-      field.coordinate(withNormalizedOffset: CGVector(dx: 0.99, dy: 0.5)).tap()
-      field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 6) + amount)
+      app.textFields["Amount"].clearAndType(amount)
       app.buttons["Save"].tap()
     }
     XCTAssertTrue(app.staticTexts["Intake, 50 of about 503 kcal/day"].waitForExistence(timeout: 5))
