@@ -109,7 +109,7 @@ struct CalorieTargetView: View {
     .toolbar {
       ToolbarItem(placement: .confirmationAction) {
         Button("Save", action: save)
-          .disabled(ownTarget == cat.calorieTargetOverride || ownTarget.map { !CalorieTarget.isValid($0) } == true)
+          .disabled(ownTarget == cat.calorieTargetOverride || ownTarget.map(CalorieTarget.isValid) == false)
       }
     }
   }
