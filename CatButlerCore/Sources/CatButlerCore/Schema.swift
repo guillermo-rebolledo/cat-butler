@@ -40,12 +40,21 @@ public nonisolated struct WeighIn: Hashable, Identifiable, Sendable {
   public var date: Date
   public var kilograms: Double
 
-  public var weight: Measurement<UnitMass> { Measurement(value: kilograms, unit: .kilograms) }
+  /// Set in any unit; kept in kilograms.
+  public var weight: Measurement<UnitMass> {
+    get { Measurement(value: kilograms, unit: .kilograms) }
+    set { kilograms = newValue.converted(to: .kilograms).value }
+  }
 }
 
 extension WeighIn {
   public static func latest(for catID: Cat.ID) -> some SelectStatementOf<WeighIn> {
     WeighIn.where { $0.catID.eq(catID) }.order { $0.date.desc() }.limit(1)
+  }
+
+  /// The Cat's Weigh-ins, oldest first, for its weight chart.
+  public static func series(for catID: Cat.ID) -> some SelectStatementOf<WeighIn> {
+    WeighIn.where { $0.catID.eq(catID) }.order(by: \.date)
   }
 }
 
@@ -121,13 +130,6 @@ extension Database {
     try Cat.insert { cat }.execute(self)
     try recordWeighIn(weight, for: cat.id, on: now)
     return cat
-  }
-
-  /// Records a Weigh-in, stored in kilograms whatever unit it was entered in.
-  public func recordWeighIn(_ weight: Measurement<UnitMass>, for catID: Cat.ID, on date: Date) throws {
-    @Dependency(\.uuid) var uuid
-    try WeighIn.insert { WeighIn(id: uuid(), catID: catID, date: date, kilograms: weight.converted(to: .kilograms).value) }
-      .execute(self)
   }
 }
 
