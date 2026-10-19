@@ -16,7 +16,8 @@ struct TodayView: View {
   }
 }
 
-/// The Cat, Intake against the Calorie Target, today's Meals as done, upcoming or missed, then the day's other Feedings.
+/// The Cat, Intake against the Calorie Target, today's Meals as done, upcoming or missed, the day's other Feedings,
+/// then its weight, with a prompt when a Weigh-in is due.
 struct FeedingsToday: View {
   let cat: Cat
   @Dependency(\.defaultDatabase) var database
@@ -25,6 +26,7 @@ struct FeedingsToday: View {
   private var day: FeedingDay { today.day }
   @FetchAll var foods: [Food]
   @State private var draft: FeedingDraft?
+  @State private var isWeighing = false
 
   var body: some View {
     List {
@@ -38,9 +40,13 @@ struct FeedingsToday: View {
       }
       meals
       otherFeedings
+      weight
     }
     .sheet(item: $draft) { draft in
       NavigationStack { FeedingEditor(draft: draft) }
+    }
+    .sheet(isPresented: $isWeighing) {
+      NavigationStack { WeighInEditor(catID: cat.id) }
     }
     .task(id: cat.id) {
       // Reload every minute so Meals turn Missed on time and Today rolls over at midnight.
@@ -105,6 +111,20 @@ struct FeedingsToday: View {
     }
   }
 
+  /// In-app only: a due Weigh-in gets no notification.
+  private var weight: some View {
+    Section("Weight") {
+      if today.isWeighInDue {
+        HStack {
+          Label("Time for a Weigh-in", systemImage: "scalemass")
+          Spacer()
+          Button("Weigh") { isWeighing = true }.buttonStyle(.borderedProminent)
+        }
+      }
+      NavigationLink("Weight Chart") { WeightView(cat: cat) }
+    }
+  }
+
   private func text(_ amount: Double, of foodID: Food.ID) -> String {
     foods.first { $0.id == foodID }?.amountText(amount) ?? ""
   }
@@ -124,6 +144,7 @@ private struct TodayRequest: FetchKeyRequest {
   struct Value: Equatable, Sendable {
     var day = FeedingDay()
     var target: CalorieTarget?
+    var isWeighInDue = false
   }
 
   let catID: Cat.ID
@@ -131,7 +152,7 @@ private struct TodayRequest: FetchKeyRequest {
   let refreshedAt: Date
 
   func fetch(_ db: Database) throws -> Value {
-    Value(day: try db.feedingDay(for: catID), target: try db.calorieTarget(for: catID))
+    Value(day: try db.feedingDay(for: catID), target: try db.calorieTarget(for: catID), isWeighInDue: try db.isWeighInDue(for: catID))
   }
 }
 
@@ -250,13 +271,7 @@ struct CatSummary: View {
       VStack(alignment: .leading) {
         Text(cat.name).font(.title2.bold())
         Text(cat.lifeStage(on: now).title).foregroundStyle(.secondary)
-        if let latestWeighIn {
-          Text(
-            latestWeighIn.weight.converted(to: .catWeight())
-              .formatted(.measurement(width: .abbreviated, usage: .asProvided, numberFormatStyle: .number.precision(.fractionLength(0...1))))
-          )
-          .foregroundStyle(.secondary)
-        }
+        if let latestWeighIn { Text(latestWeighIn.weightText).foregroundStyle(.secondary) }
       }
     }
   }
