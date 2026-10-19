@@ -66,9 +66,15 @@ public nonisolated struct Feeding: Hashable, Identifiable, Sendable {
   public internal(set) var mealID: Meal.ID?
   /// Calories given, fixed when logged so that editing the Food later doesn't rewrite past Intake.
   public internal(set) var kcal: Double
+  /// How much of it the Cat ate, from 0 to 1, set afterwards when food is left in the bowl. Nil means all of it.
+  public var eatenFraction: Double?
+
+  /// Calories eaten, which is what counts toward Intake.
+  var eatenKcal: Double { kcal * (eatenFraction ?? 1) }
 }
 
 public struct FoodUsedByMeal: Error {}
+public struct InvalidEatenFraction: Error {}
 
 /// Each Meal of one local day with its status, plus the day's other Feedings.
 public struct FeedingDay: Equatable, Sendable {
@@ -91,6 +97,7 @@ public struct FeedingDay: Equatable, Sendable {
   /// The day's Feedings that fulfilled none of the day's Meals: off-schedule ones, and any that
   /// fulfilled last night's Meal after midnight or were matched in another time zone.
   public var otherFeedings: [Feeding] = []
+  public var intake = Intake()
 
   public init() {}
 }
@@ -125,15 +132,16 @@ extension Database {
     @Dependency(\.uuid) var uuid
     let feeding = Feeding(
       id: uuid(), catID: catID, foodID: foodID, amount: amount, date: date, mealID: nil,
-      kcal: amount * (try kcalPerUnit(of: foodID))
+      kcal: amount * (try kcalPerUnit(of: foodID)), eatenFraction: nil
     )
     try Feeding.insert { feeding }.execute(self)
     try relinkFeedings(of: catID, from: date)
     return try Feeding.find(feeding.id).fetchOne(self) ?? feeding
   }
 
-  /// Saves a changed Food, amount or time. Calories are recalculated only when the Food or amount changed.
+  /// Saves a changed Food, amount, time or eaten fraction. Calories are recalculated only when the Food or amount changed.
   public func updateFeeding(_ feeding: Feeding) throws {
+    if let fraction = feeding.eatenFraction, !(0...1).contains(fraction) { throw InvalidEatenFraction() }
     guard let old = try Feeding.find(feeding.id).fetchOne(self) else { throw NotFound() }
     var feeding = feeding
     feeding.mealID = old.mealID
@@ -191,7 +199,16 @@ extension Database {
       return FeedingDay.MealStatus(meal: meal, time: time, state: state)
     }
     let done = Set(result.meals.compactMap { if case .done(let feeding) = $0.state { feeding.id } else { nil } })
-    result.otherFeedings = feedings.filter { !done.contains($0.id) && $0.date >= day.start && $0.date < day.end }
+    let todays = feedings.filter { $0.date >= day.start && $0.date < day.end }
+    result.otherFeedings = todays.filter { !done.contains($0.id) }
+    // Retired Foods keep their treat and free-fed flags, so their past Feedings still count the same.
+    let treats = Set(try Food.where(\.isTreat).select(\.id).fetchAll(self))
+    let freeFed = Set(try Food.where(\.isFreeFed).select(\.id).fetchAll(self))
+    result.intake = Intake(
+      kcal: todays.map(\.eatenKcal).reduce(0, +),
+      treatKcal: todays.filter { treats.contains($0.foodID) }.map(\.eatenKcal).reduce(0, +),
+      isApproximate: todays.contains { freeFed.contains($0.foodID) }
+    )
     return result
   }
 

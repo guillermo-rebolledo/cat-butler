@@ -16,6 +16,8 @@ public nonisolated struct Cat: Hashable, Identifiable, Sendable {
   public var photo: Data?
   public var birthdate: Date
   public var isNeutered: Bool
+  /// The owner's own daily Calorie Target, e.g. from the vet, replacing the calculated one.
+  public var calorieTargetOverride: Double?
 
   public func lifeStage(on date: Date) -> LifeStage {
     @Dependency(\.calendar) var calendar
@@ -113,12 +115,18 @@ extension Database {
       name: name,
       photo: photo,
       birthdate: birthdate,
-      isNeutered: isNeutered
+      isNeutered: isNeutered,
+      calorieTargetOverride: nil
     )
     try Cat.insert { cat }.execute(self)
-    try WeighIn.insert { WeighIn(id: uuid(), catID: cat.id, date: now, kilograms: weight.converted(to: .kilograms).value) }
-      .execute(self)
+    try recordWeighIn(weight, for: cat.id, on: now)
     return cat
+  }
+
+  public func recordWeighIn(_ weight: Measurement<UnitMass>, for catID: Cat.ID, on date: Date) throws {
+    @Dependency(\.uuid) var uuid
+    try WeighIn.insert { WeighIn(id: uuid(), catID: catID, date: date, kilograms: weight.converted(to: .kilograms).value) }
+      .execute(self)
   }
 }
 
@@ -219,6 +227,11 @@ public func appDatabase() throws -> any DatabaseWriter {
     try #sql(#"CREATE INDEX "idx_feedings_catID_date" ON "feedings"("catID", "date")"#).execute(db)
     try #sql(#"CREATE INDEX "idx_feedings_foodID" ON "feedings"("foodID")"#).execute(db)
     try #sql(#"CREATE INDEX "idx_feedings_mealID" ON "feedings"("mealID")"#).execute(db)
+  }
+  // Nullable, so records synced from an older build still fit.
+  migrator.registerMigration("Add Calorie Target overrides and eaten fractions") { db in
+    try #sql(#"ALTER TABLE "cats" ADD COLUMN "calorieTargetOverride" REAL"#).execute(db)
+    try #sql(#"ALTER TABLE "feedings" ADD COLUMN "eatenFraction" REAL"#).execute(db)
   }
   try migrator.migrate(database)
   return database

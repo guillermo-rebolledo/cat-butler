@@ -16,18 +16,26 @@ struct TodayView: View {
   }
 }
 
-/// The Cat, today's Meals as done, upcoming or missed, then the day's other Feedings.
+/// The Cat, Intake against the Calorie Target, today's Meals as done, upcoming or missed, then the day's other Feedings.
 struct FeedingsToday: View {
   let cat: Cat
   @Dependency(\.defaultDatabase) var database
   @Dependency(\.date.now) var now
-  @Fetch var day = FeedingDay()
+  @Fetch var today = TodayRequest.Value()
+  private var day: FeedingDay { today.day }
   @FetchAll var foods: [Food]
   @State private var draft: FeedingDraft?
 
   var body: some View {
     List {
       CatSummary(cat: cat)
+      Section {
+        NavigationLink { CalorieTargetView(cat: cat, target: today.target) } label: {
+          IntakeSummary(intake: day.intake, target: today.target)
+        }
+      } footer: {
+        Text("The Calorie Target is an estimate. Adjust it based on the weight trend and your vet.")
+      }
       meals
       otherFeedings
     }
@@ -37,7 +45,7 @@ struct FeedingsToday: View {
     .task(id: cat.id) {
       // Reload every minute so Meals turn Missed on time and Today rolls over at midnight.
       while !Task.isCancelled {
-        await withErrorReporting { try await $day.load(FeedingDayRequest(catID: cat.id, refreshedAt: now)) }
+        await withErrorReporting { try await $today.load(TodayRequest(catID: cat.id, refreshedAt: now)) }
         try? await Task.sleep(for: .seconds(60))
       }
     }
@@ -112,13 +120,18 @@ struct FeedingsToday: View {
   }
 }
 
-private struct FeedingDayRequest: FetchKeyRequest {
+struct TodayRequest: FetchKeyRequest {
+  struct Value: Equatable, Sendable {
+    var day = FeedingDay()
+    var target: CalorieTarget?
+  }
+
   let catID: Cat.ID
   /// Only here so each minute's reload is a new request.
   let refreshedAt: Date
 
-  func fetch(_ db: Database) throws -> FeedingDay {
-    try db.feedingDay(for: catID)
+  func fetch(_ db: Database) throws -> Value {
+    Value(day: try db.feedingDay(for: catID), target: try db.calorieTarget(for: catID))
   }
 }
 
@@ -130,6 +143,7 @@ struct FeedingDraft: Identifiable {
   var foodID: Food.ID?
   var amount: Double?
   var date: Date
+  var eatenFraction: Double?
 
   init(_ feeding: Feeding) {
     self.feeding = feeding
@@ -137,6 +151,7 @@ struct FeedingDraft: Identifiable {
     foodID = feeding.foodID
     amount = feeding.amount
     date = feeding.date
+    eatenFraction = feeding.eatenFraction
   }
 
   /// A new Feeding with the Meal's defaults.
@@ -164,6 +179,16 @@ struct FeedingEditor: View {
           NumberField("Amount", value: $draft.amount, unit: foods.unitTitle(of: foodID.wrappedValue))
         }
         DatePicker("Time", selection: $draft.date, in: ...now)
+        // Afterwards, when food is left in the bowl.
+        if draft.feeding != nil {
+          Picker("Ate", selection: $draft.eatenFraction) {
+            Text("All of it").tag(Double?.none)
+            Text("About ¾").tag(Double?.some(0.75))
+            Text("About ½").tag(Double?.some(0.5))
+            Text("About ¼").tag(Double?.some(0.25))
+            Text("None").tag(Double?.some(0))
+          }
+        }
       }
       if draft.feeding != nil {
         Section { Button("Delete Feeding", role: .destructive, action: delete) }
@@ -188,6 +213,7 @@ struct FeedingEditor: View {
           feeding.foodID = foodID
           feeding.amount = amount
           feeding.date = draft.date
+          feeding.eatenFraction = draft.eatenFraction
           try db.updateFeeding(feeding)
         } else {
           try db.logFeeding(catID: draft.catID, foodID: foodID, amount: amount, at: draft.date)

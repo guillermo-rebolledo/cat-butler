@@ -11,6 +11,7 @@
 		31DC6EB1831434379B5EA1C2 /* FeedingsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DF9CC5ACCF3A6735B70D784 /* FeedingsUITests.swift */; };
 		36EAB24A1134476AF9CF2290 /* CatButlerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 26C5E937E62EE9E7E031B046 /* CatButlerCore */; };
 		46EE55EC12472E4E98AD5B36 /* FoodsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6224B82986FF4D0CC5BF122 /* FoodsView.swift */; };
+		69AF37E81DAB04A3CB238C4F /* CalorieTargetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21B53ACDDBC50ABEA2BFF0B8 /* CalorieTargetView.swift */; };
 		808335586FA8C1CDE57A395B /* FirstRunUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3812F96BA30A3B15689AE781 /* FirstRunUITests.swift */; };
 		A82EDDE5EBA2E42DFC141ABC /* CatButlerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */; };
 		AAE4D5AA8BDFF48981A59ACF /* MealsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0EF9D7B84E72196D2FC5663 /* MealsView.swift */; };
@@ -18,6 +19,7 @@
 		C27D3DD740E209A0CA9CAEF9 /* UITestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EC56CA39CBCB08C0C218079 /* UITestHelpers.swift */; };
 		D1F8297188C56AA2CF1C0A4B /* NumberField.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA726DBFDCCBE04E6190F74 /* NumberField.swift */; };
 		D859284EED9938ABA4F84893 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE256923D3095CC8EAAAEE8 /* TodayView.swift */; };
+		EA268734180EAED01358BA88 /* CalorieUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B1D775EFA337886A6FFCF0 /* CalorieUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -32,7 +34,9 @@
 
 /* Begin PBXFileReference section */
 		1DF9CC5ACCF3A6735B70D784 /* FeedingsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedingsUITests.swift; sourceTree = "<group>"; };
+		21B53ACDDBC50ABEA2BFF0B8 /* CalorieTargetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalorieTargetView.swift; sourceTree = "<group>"; };
 		3812F96BA30A3B15689AE781 /* FirstRunUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunUITests.swift; sourceTree = "<group>"; };
+		50B1D775EFA337886A6FFCF0 /* CalorieUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalorieUITests.swift; sourceTree = "<group>"; };
 		5AC084D8949371D66FFE430F /* FoodsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsUITests.swift; sourceTree = "<group>"; };
 		61BB67926E171EA1B8DA2AC3 /* CatButlerCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CatButlerCore; path = CatButlerCore; sourceTree = SOURCE_ROOT; };
 		6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatButlerApp.swift; sourceTree = "<group>"; };
@@ -88,6 +92,7 @@
 		F81E925E19D2F451E85A96E7 /* CatButler */ = {
 			isa = PBXGroup;
 			children = (
+				21B53ACDDBC50ABEA2BFF0B8 /* CalorieTargetView.swift */,
 				6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */,
 				BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */,
 				B6224B82986FF4D0CC5BF122 /* FoodsView.swift */,
@@ -101,6 +106,7 @@
 		FF1EF1B159DEF3477C09B34D /* CatButlerUITests */ = {
 			isa = PBXGroup;
 			children = (
+				50B1D775EFA337886A6FFCF0 /* CalorieUITests.swift */,
 				1DF9CC5ACCF3A6735B70D784 /* FeedingsUITests.swift */,
 				3812F96BA30A3B15689AE781 /* FirstRunUITests.swift */,
 				5AC084D8949371D66FFE430F /* FoodsUITests.swift */,
@@ -191,6 +197,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EA268734180EAED01358BA88 /* CalorieUITests.swift in Sources */,
 				31DC6EB1831434379B5EA1C2 /* FeedingsUITests.swift in Sources */,
 				808335586FA8C1CDE57A395B /* FirstRunUITests.swift in Sources */,
 				06735874F9788F6643D8FD68 /* FoodsUITests.swift in Sources */,
@@ -202,6 +209,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				69AF37E81DAB04A3CB238C4F /* CalorieTargetView.swift in Sources */,
 				A82EDDE5EBA2E42DFC141ABC /* CatButlerApp.swift in Sources */,
 				B4C054DD8D09E47C77503566 /* FirstRunView.swift in Sources */,
 				46EE55EC12472E4E98AD5B36 /* FoodsView.swift in Sources */,
