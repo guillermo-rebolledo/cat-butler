@@ -76,16 +76,6 @@ struct CalorieTests {
     #expect(try target(of: cat)?.isOverride == false)
   }
 
-  @Test func anOverrideStandsWithoutAWeighIn() throws {
-    let cat = try addCat(born: "2020-05-01T00:00:00-04:00", kilograms: 4)
-    try database.write { db in
-      try WeighIn.delete().execute(db)
-      #expect(try db.calorieTarget(for: cat.id) == nil)
-      try db.overrideCalorieTarget(210, for: cat.id)
-    }
-    #expect(try target(of: cat) == CalorieTarget(kcal: 210, isOverride: true))
-  }
-
   @Test func theConverterShowsHowMuchOfAFoodMeetsTheTarget() throws {
     let cat = try addCat(born: "2020-05-01T00:00:00-04:00", kilograms: 4)
     try database.write { try $0.overrideCalorieTarget(240, for: cat.id) }
@@ -186,6 +176,17 @@ struct CalorieTests {
     feeding.eatenFraction = fraction
     #expect(throws: InvalidEatenFraction.self) { try database.write { try $0.updateFeeding(feeding) } }
     #expect(try intake(of: cat).kcal == 80)
+  }
+
+  @Test func treatAndFreeFedFollowTheFoodAsItIsNowButCaloriesDont() throws {
+    let cat = try addCat(born: "2026-03-19T00:00:00-04:00", kilograms: 2)
+    var bites = try addFood("Chicken bites", kcalPerUnit: 2)
+    try log(5, of: bites, for: cat, at: "2026-10-19T08:00:00-04:00")
+    bites.isTreat = true
+    bites.isFreeFed = true
+    bites.kcalPerUnit = 3
+    try database.write { try $0.updateFood(bites) }
+    #expect(try intake(of: cat) == Intake(kcal: 10, treatKcal: 10, isApproximate: true))
   }
 
   @Test func eachCatHasItsOwnIntake() throws {

@@ -35,7 +35,7 @@ struct IntakeSummary: View {
   }
 }
 
-/// Meals, then treats, across the Target. Fills up when Intake reaches the Target.
+/// Feedings other than treats, then treats, across the Target. Fills up when Intake reaches the Target.
 private struct IntakeBar: View {
   let intake: Intake
   let target: CalorieTarget
@@ -43,9 +43,11 @@ private struct IntakeBar: View {
   var body: some View {
     let scale = max(target.kcal, intake.kcal)
     GeometryReader { geometry in
-      HStack(spacing: 0) {
-        Rectangle().fill(.tint).frame(width: geometry.size.width * (intake.kcal - intake.treatKcal) / scale)
-        Rectangle().fill(.orange).frame(width: geometry.size.width * intake.treatKcal / scale)
+      if scale > 0 {
+        HStack(spacing: 0) {
+          Rectangle().fill(.tint).frame(width: geometry.size.width * (intake.kcal - intake.treatKcal) / scale)
+          Rectangle().fill(.orange).frame(width: geometry.size.width * intake.treatKcal / scale)
+        }
       }
     }
     .frame(height: 8)
@@ -80,7 +82,7 @@ struct CalorieTargetView: View {
           Text("Set by you. Individual cats vary: adjust it based on the weight trend and your vet.")
         } else {
           Text(
-            "An estimate from \(cat.name)'s latest Weigh-in, Life Stage and neuter status. Individual cats vary by up to 50%, so adjust it based on the weight trend and your vet."
+            "An estimate from \(cat.name)'s latest Weigh-in, Life Stage and neuter status. Individual cats vary by as much as 30–50%, so adjust it based on the weight trend and your vet."
           )
         }
       }
@@ -107,7 +109,7 @@ struct CalorieTargetView: View {
     .toolbar {
       ToolbarItem(placement: .confirmationAction) {
         Button("Save", action: save)
-          .disabled(ownTarget == cat.calorieTargetOverride || ownTarget.map { !($0 > 0) } == true)
+          .disabled(ownTarget == cat.calorieTargetOverride || ownTarget.map { !($0.isFinite && $0 > 0) } == true)
       }
     }
   }
@@ -128,7 +130,7 @@ extension CalorieTarget {
   }
 }
 
-/// "238"
-func kcalText(_ kcal: Double) -> String {
+/// "238". Whole kcal for daily totals; per-unit kcal keep a decimal (`ServingUnit.kcalText`).
+private func kcalText(_ kcal: Double) -> String {
   kcal.formatted(.number.precision(.fractionLength(0)))
 }

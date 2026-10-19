@@ -11,8 +11,8 @@
 		31DC6EB1831434379B5EA1C2 /* FeedingsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DF9CC5ACCF3A6735B70D784 /* FeedingsUITests.swift */; };
 		36EAB24A1134476AF9CF2290 /* CatButlerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 26C5E937E62EE9E7E031B046 /* CatButlerCore */; };
 		46EE55EC12472E4E98AD5B36 /* FoodsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6224B82986FF4D0CC5BF122 /* FoodsView.swift */; };
-		69AF37E81DAB04A3CB238C4F /* CalorieTargetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21B53ACDDBC50ABEA2BFF0B8 /* CalorieTargetView.swift */; };
 		808335586FA8C1CDE57A395B /* FirstRunUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3812F96BA30A3B15689AE781 /* FirstRunUITests.swift */; };
+		93DA87EFCDF32FAF7D09350C /* CaloriesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5C0E8D3EDEFA0EA1428CF6 /* CaloriesView.swift */; };
 		A82EDDE5EBA2E42DFC141ABC /* CatButlerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */; };
 		AAE4D5AA8BDFF48981A59ACF /* MealsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0EF9D7B84E72196D2FC5663 /* MealsView.swift */; };
 		B4C054DD8D09E47C77503566 /* FirstRunView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */; };
@@ -33,8 +33,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0E5C0E8D3EDEFA0EA1428CF6 /* CaloriesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaloriesView.swift; sourceTree = "<group>"; };
 		1DF9CC5ACCF3A6735B70D784 /* FeedingsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedingsUITests.swift; sourceTree = "<group>"; };
-		21B53ACDDBC50ABEA2BFF0B8 /* CalorieTargetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalorieTargetView.swift; sourceTree = "<group>"; };
 		3812F96BA30A3B15689AE781 /* FirstRunUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstRunUITests.swift; sourceTree = "<group>"; };
 		50B1D775EFA337886A6FFCF0 /* CalorieUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalorieUITests.swift; sourceTree = "<group>"; };
 		5AC084D8949371D66FFE430F /* FoodsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsUITests.swift; sourceTree = "<group>"; };
@@ -92,7 +92,7 @@
 		F81E925E19D2F451E85A96E7 /* CatButler */ = {
 			isa = PBXGroup;
 			children = (
-				21B53ACDDBC50ABEA2BFF0B8 /* CalorieTargetView.swift */,
+				0E5C0E8D3EDEFA0EA1428CF6 /* CaloriesView.swift */,
 				6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */,
 				BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */,
 				B6224B82986FF4D0CC5BF122 /* FoodsView.swift */,
@@ -209,7 +209,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				69AF37E81DAB04A3CB238C4F /* CalorieTargetView.swift in Sources */,
+				93DA87EFCDF32FAF7D09350C /* CaloriesView.swift in Sources */,
 				A82EDDE5EBA2E42DFC141ABC /* CatButlerApp.swift in Sources */,
 				B4C054DD8D09E47C77503566 /* FirstRunView.swift in Sources */,
 				46EE55EC12472E4E98AD5B36 /* FoodsView.swift in Sources */,

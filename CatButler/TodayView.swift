@@ -21,7 +21,7 @@ struct FeedingsToday: View {
   let cat: Cat
   @Dependency(\.defaultDatabase) var database
   @Dependency(\.date.now) var now
-  @Fetch var today = TodayRequest.Value()
+  @Fetch private var today = TodayRequest.Value()
   private var day: FeedingDay { today.day }
   @FetchAll var foods: [Food]
   @State private var draft: FeedingDraft?
@@ -120,7 +120,7 @@ struct FeedingsToday: View {
   }
 }
 
-struct TodayRequest: FetchKeyRequest {
+private struct TodayRequest: FetchKeyRequest {
   struct Value: Equatable, Sendable {
     var day = FeedingDay()
     var target: CalorieTarget?

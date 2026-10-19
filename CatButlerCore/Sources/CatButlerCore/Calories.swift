@@ -2,7 +2,7 @@ import Dependencies
 import Foundation
 import SQLiteData
 
-/// The daily calories a Cat should eat. An estimate: individual Cats vary by 30–50%.
+/// The daily calories a Cat should eat. An estimate: individual Cats vary by as much as 30–50%.
 public struct CalorieTarget: Equatable, Sendable {
   public var kcal: Double
   /// The owner set it, e.g. to the vet's number, rather than it being calculated.

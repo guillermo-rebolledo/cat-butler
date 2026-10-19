@@ -201,15 +201,21 @@ extension Database {
     let done = Set(result.meals.compactMap { if case .done(let feeding) = $0.state { feeding.id } else { nil } })
     let todays = feedings.filter { $0.date >= day.start && $0.date < day.end }
     result.otherFeedings = todays.filter { !done.contains($0.id) }
-    // Retired Foods keep their treat and free-fed flags, so their past Feedings still count the same.
-    let treats = Set(try Food.where(\.isTreat).select(\.id).fetchAll(self))
-    let freeFed = Set(try Food.where(\.isFreeFed).select(\.id).fetchAll(self))
-    result.intake = Intake(
-      kcal: todays.map(\.eatenKcal).reduce(0, +),
-      treatKcal: todays.filter { treats.contains($0.foodID) }.map(\.eatenKcal).reduce(0, +),
-      isApproximate: todays.contains { freeFed.contains($0.foodID) }
-    )
+    result.intake = try intake(of: todays)
     return result
+  }
+
+  /// Treat and free-fed come from the Food as it is now, so re-flagging a Food relabels its past Feedings; only the
+  /// calories are fixed when logged. Retired Foods keep their flags, so their Feedings still count the same.
+  private func intake(of feedings: [Feeding]) throws -> Intake {
+    let foods = try Food.where { $0.id.in(feedings.map(\.foodID)) }.fetchAll(self)
+    let treats = Set(foods.filter(\.isTreat).map(\.id))
+    let freeFed = Set(foods.filter(\.isFreeFed).map(\.id))
+    return Intake(
+      kcal: feedings.map(\.eatenKcal).reduce(0, +),
+      treatKcal: feedings.filter { treats.contains($0.foodID) }.map(\.eatenKcal).reduce(0, +),
+      isApproximate: feedings.contains { freeFed.contains($0.foodID) }
+    )
   }
 
   private func kcalPerUnit(of foodID: Food.ID) throws -> Double {
