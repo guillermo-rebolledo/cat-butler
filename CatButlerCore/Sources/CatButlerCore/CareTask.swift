@@ -153,16 +153,20 @@ extension Database {
     try followLatestCareRecord(of: old.careTaskID, from: latest)
   }
 
-  /// A recurring task falls back to the Care Record before. With none left it's due from the deleted record's date,
-  /// since the due date set by hand is gone; a one-off task is no longer done.
+  /// A recurring task falls back to the Care Record before. With none left, a due date counted from the deleted
+  /// record goes back to that record's date, since the one set before it is gone; one set by hand since stays.
+  /// A one-off task is no longer done.
   public func deleteCareRecord(_ id: CareRecord.ID) throws {
+    @Dependency(\.calendar) var calendar
     guard let old = try CareRecord.find(id).fetchOne(self) else { return }
     let latest = try latestCareRecordDate(of: old.careTaskID)
     try CareRecord.find(id).delete().execute(self)
     try followLatestCareRecord(of: old.careTaskID, from: latest)
-    if try latestCareRecordDate(of: old.careTaskID) == nil {
-      try CareTask.find(old.careTaskID).where { $0.repeatCount.isNot(nil) }.update { $0.dueDate = old.date }.execute(self)
-    }
+    guard try latestCareRecordDate(of: old.careTaskID) == nil, var task = try CareTask.find(old.careTaskID).fetchOne(self),
+      let interval = task.interval, task.dueDate == interval.date(after: old.date, calendar: calendar)
+    else { return }
+    task.dueDate = old.date
+    try CareTask.update(task).execute(self)
   }
 
   private func latestCareRecordDate(of taskID: CareTask.ID) throws -> Date? {

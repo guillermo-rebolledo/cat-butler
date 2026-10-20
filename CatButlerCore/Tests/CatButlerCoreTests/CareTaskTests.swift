@@ -189,4 +189,53 @@ struct CareTaskTests {
     #expect(try status(of: task).state == .overdue)
     #expect(try status(of: task).task.dueDate == instant("2026-10-12T09:00:00-04:00"))
   }
+
+  @Test func deletingTheOnlyRecordKeepsADueDateSetByHandAfterIt() throws {
+    var task = try addTask("Vaccine", due: "2026-10-01T09:00:00-04:00", every: CareInterval(count: 1, unit: .year))
+    let shelter = try record(task, on: "2025-09-20T09:00:00-04:00")
+    task = try status(of: task).task
+    task.dueDate = instant("2029-09-20T09:00:00-04:00")
+    try database.write { try $0.updateCareTask(task) }
+    try database.write { try $0.deleteCareRecord(shelter.id) }
+    #expect(try status(of: task).task.dueDate == instant("2029-09-20T09:00:00-04:00"))
+  }
+
+  @Test func onlyAChangeToTheLatestRecordsDateMovesAHandSetDueDate() throws {
+    var task = try addTask(due: "2026-07-01T09:00:00-04:00", every: CareInterval(count: 3, unit: .month))
+    let older = try record(task, on: "2026-07-01T09:00:00-04:00")
+    var latest = try record(task, on: "2026-10-01T09:00:00-04:00")
+    let handSet = instant("2026-12-24T09:00:00-05:00")
+    task = try status(of: task).task
+    task.dueDate = handSet
+    try database.write { try $0.updateCareTask(task) }
+
+    // Another on the same day, a note on the latest, deleting an older one: the vet's date stays.
+    try record(task, on: "2026-10-01T09:00:00-04:00")
+    latest.notes = "Half a tablet"
+    try database.write { try $0.updateCareRecord(latest) }
+    try database.write { try $0.deleteCareRecord(older.id) }
+    #expect(try status(of: task).task.dueDate == handSet)
+
+    // Both October ones were really given in August: the latest is now August.
+    latest.date = instant("2026-08-01T09:00:00-04:00")
+    try database.write { try $0.updateCareRecord(latest) }
+    #expect(try status(of: task).task.dueDate == handSet)
+    let sameDay = try #require(try database.read { try CareRecord.history(for: cat.id).fetchAll($0) }.first)
+    var moved = sameDay
+    moved.date = instant("2026-08-02T09:00:00-04:00")
+    try database.write { try $0.updateCareRecord(moved) }
+    #expect(try status(of: task).task.dueDate == instant("2026-11-02T09:00:00-05:00"))
+  }
+
+  @Test func aCorrectedRecordStaysWithItsTask() throws {
+    let deworming = try addTask(due: "2026-10-01T09:00:00-04:00", every: CareInterval(count: 3, unit: .month))
+    let flea = try addTask("Flea treatment", due: "2026-10-01T09:00:00-04:00", every: CareInterval(count: 1, unit: .month))
+    var given = try record(deworming, on: "2026-10-10T09:00:00-04:00")
+    given.careTaskID = flea.id
+    given.date = instant("2026-10-12T09:00:00-04:00")
+    try database.write { try $0.updateCareRecord(given) }
+    #expect(try database.read { try CareRecord.history(for: cat.id).fetchAll($0) }.map(\.careTaskID) == [deworming.id])
+    #expect(try status(of: deworming).task.dueDate == instant("2027-01-12T09:00:00-05:00"))
+    #expect(try status(of: flea).task.dueDate == instant("2026-10-01T09:00:00-04:00"))
+  }
 }

@@ -47,7 +47,8 @@ private struct CareList: View {
       }
       Section("\(cat.name)'s History") {
         ForEach(history) { record in
-          Button { correcting = record } label: {
+          // Its Care Task names the editor, so wait for the tasks to load.
+          Button { if task(of: record) != nil { correcting = record } } label: {
             CareRecordRow(record: record, title: task(of: record)?.title ?? "")
           }
           .tint(.primary)
