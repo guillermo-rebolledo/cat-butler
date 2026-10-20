@@ -130,4 +130,11 @@ struct MealReminderTests {
       #expect(feeding?.mealID == dinner.id)
     }
   }
+
+  /// Last night's late Meal still gets its follow-up when the plan is rebuilt just after midnight.
+  @Test func aFollowUpPastMidnightSurvivesAPlanRebuiltAfterMidnight() throws {
+    try save(meal(at: 23 * 60 + 45))
+    let first = try withDependencies { $0.date.now = instant("2026-10-20T00:05:00-04:00") } operation: { try plan().first }
+    #expect(first == reminder(.followUp, "2026-10-20T00:15:00-04:00"))
+  }
 }

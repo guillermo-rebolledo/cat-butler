@@ -43,7 +43,8 @@ extension Database {
     var reminders: [MealReminder] = []
     for meal in try Meal.all.fetchAll(self) {
       guard let cat = cats[meal.catID], let food = foods[meal.foodID], !food.isFreeFed else { continue }
-      for offset in 0..<MealReminder.days {
+      // From yesterday: last night's late Meal can still have its follow-up to come after midnight.
+      for offset in -1..<MealReminder.days {
         let time = meal.time(on: calendar.date(byAdding: .day, value: offset, to: now)!, calendar: calendar)
         guard !feedings.contains(where: { $0.fulfils(meal, at: time) }) else { continue }
         for (kind, date) in [(MealReminder.Kind.due, time), (.followUp, time.addingTimeInterval(MealReminder.followUpDelay))]
@@ -63,8 +64,7 @@ extension Database {
     @Dependency(\.date.now) var now
     guard let meal = try Meal.find(mealID).fetchOne(self) else { return nil }
     let window = mealTime.addingTimeInterval(-Meal.window)...mealTime.addingTimeInterval(Meal.window)
-    let feedings = try Feeding.where { $0.mealID.eq(mealID) && $0.date >= window.lowerBound && $0.date <= window.upperBound }
-      .fetchAll(self)
+    let feedings = try Feeding.where { $0.mealID.eq(mealID) && $0.date >= window.lowerBound }.fetchAll(self)
     guard !feedings.contains(where: { $0.fulfils(meal, at: mealTime) }) else { return nil }
     return try logFeeding(catID: meal.catID, foodID: meal.foodID, amount: meal.amount, at: window.contains(now) ? now : mealTime)
   }
