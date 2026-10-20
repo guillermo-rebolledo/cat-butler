@@ -350,3 +350,46 @@ extension CareInterval {
     }
   }
 }
+
+/// Settings → Care Reminders: when a Care Task's two reminders fire.
+struct CareReminderSettings: View {
+  @AppStorage(CareReminder.Timing.daysBeforeKey) private var daysBefore = CareReminder.Timing.default.daysBefore
+  @AppStorage(CareReminder.Timing.minuteOfDayKey) private var minuteOfDay = CareReminder.Timing.default.minuteOfDay
+  @Dependency(\.calendar) var calendar
+  @Dependency(\.date.now) var now
+
+  var body: some View {
+    Form {
+      Section {
+        Stepper("^[\(daysBefore) day](inflect: true) before", value: $daysBefore, in: 1...30)
+        DatePicker("Time", selection: time, displayedComponents: .hourAndMinute)
+      } footer: {
+        Text("Each Care Task gets a reminder this many days before it's due, in time to book the vet, and one on the day. Overdue tasks get no more reminders.")
+      }
+    }
+    .navigationTitle("Care Reminders")
+  }
+
+  private var time: Binding<Date> {
+    Binding {
+      calendar.date(bySettingHour: minuteOfDay / 60, minute: minuteOfDay % 60, second: 0, of: now)!
+    } set: {
+      let parts = calendar.dateComponents([.hour, .minute], from: $0)
+      minuteOfDay = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+    }
+  }
+}
+
+extension CareReminder.Timing {
+  static let daysBeforeKey = "careReminderDaysBefore"
+  static let minuteOfDayKey = "careReminderMinuteOfDay"
+
+  /// What Settings → Care Reminders has, for when no screen is watching: "Fed ✓" in the background.
+  static var saved: Self {
+    let defaults = UserDefaults.standard
+    return Self(
+      daysBefore: defaults.object(forKey: daysBeforeKey) as? Int ?? Self.default.daysBefore,
+      minuteOfDay: defaults.object(forKey: minuteOfDayKey) as? Int ?? Self.default.minuteOfDay
+    )
+  }
+}

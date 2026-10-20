@@ -14,7 +14,7 @@ struct CatButlerApp: App {
       }
       $0.defaultDatabase = try! appDatabase()
     }
-    MealNotifications.shared.start()
+    ReminderNotifications.shared.start()
   }
 
   var body: some Scene {
@@ -26,7 +26,9 @@ struct RootView: View {
   @FetchAll(Cat.order(by: \.name)) var cats
   @FetchAll var foods: [Food]
   @FetchAll var meals: [Meal]
-  @Fetch var mealReminders: [MealReminder] = []
+  @Fetch var reminders: [Reminder] = []
+  @AppStorage(CareReminder.Timing.daysBeforeKey) private var careDaysBefore = CareReminder.Timing.default.daysBefore
+  @AppStorage(CareReminder.Timing.minuteOfDayKey) private var careMinuteOfDay = CareReminder.Timing.default.minuteOfDay
   @Environment(\.scenePhase) private var scenePhase
   @Dependency(\.date.now) var now
 
@@ -35,13 +37,23 @@ struct RootView: View {
       // On every return to the app, so the plan moves on with the clock, and on every change to the database.
       .task(id: scenePhase) {
         guard scenePhase == .active else { return }
-        MealNotifications.shared.clearDelivered()
-        await withErrorReporting { try await $mealReminders.load(MealRemindersRequest(refreshedAt: now)) }
+        ReminderNotifications.shared.clearDelivered()
+        await loadReminders()
         // Here too, not only on change: a plan that loads empty must still clear what's pending.
-        MealNotifications.shared.schedule(mealReminders)
-        if !meals.isEmpty { await MealNotifications.shared.requestPermission() }
+        ReminderNotifications.shared.schedule(reminders)
+        if !meals.isEmpty { await ReminderNotifications.shared.requestPermission() }
       }
-      .onChange(of: mealReminders) { MealNotifications.shared.schedule(mealReminders) }
+      // A changed timing in Settings → Care Reminders.
+      .onChange(of: careTiming) { Task { await loadReminders() } }
+      .onChange(of: reminders) { ReminderNotifications.shared.schedule(reminders) }
+  }
+
+  private var careTiming: CareReminder.Timing {
+    CareReminder.Timing(daysBefore: careDaysBefore, minuteOfDay: careMinuteOfDay)
+  }
+
+  private func loadReminders() async {
+    await withErrorReporting { try await $reminders.load(RemindersRequest(careTiming: careTiming, refreshedAt: now)) }
   }
 
   @ViewBuilder private var content: some View {
@@ -64,6 +76,7 @@ struct RootView: View {
               // ponytail: the first Cat's Meals only, like Today; per-Cat settings come with multi-Cat support.
               if let cat = cats.first { NavigationLink("Meals") { MealScheduleEditor(cat: cat) } }
               NavigationLink("Foods") { FoodsView() }
+              NavigationLink("Care Reminders") { CareReminderSettings() }
             }
             .navigationTitle("Settings")
           }
@@ -73,11 +86,12 @@ struct RootView: View {
   }
 }
 
-private struct MealRemindersRequest: FetchKeyRequest {
+private struct RemindersRequest: FetchKeyRequest {
+  let careTiming: CareReminder.Timing
   /// Only here so each return to the app is a new request.
   let refreshedAt: Date
 
-  func fetch(_ db: Database) throws -> [MealReminder] {
-    try db.mealReminders()
+  func fetch(_ db: Database) throws -> [Reminder] {
+    try db.reminders(careTiming: careTiming)
   }
 }

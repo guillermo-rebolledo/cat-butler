@@ -77,7 +77,7 @@ struct MealScheduleEditor: View {
     // First run: the explanation stays on screen behind iOS's permission alert.
     guard !isFirstRun else {
       Task {
-        await MealNotifications.shared.requestPermission()
+        await ReminderNotifications.shared.requestPermission()
         write()
       }
       return
