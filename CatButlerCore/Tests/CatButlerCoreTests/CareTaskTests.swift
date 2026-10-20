@@ -29,8 +29,8 @@ struct CareTaskTests {
     try database.write { try $0.addCareTask(for: cat.id, title: title, dueDate: instant(due), interval: interval) }
   }
 
-  func complete(_ task: CareTask, on iso8601: String, notes: String = "") throws {
-    try database.write { try $0.completeCareTask(task.id, on: instant(iso8601), notes: notes, photo: nil) }
+  func record(_ task: CareTask, on iso8601: String, notes: String = "") throws {
+    try database.write { try $0.addCareRecord(for: task.id, on: instant(iso8601), notes: notes, photo: nil) }
   }
 
   func status(of task: CareTask, at iso8601: String = "2026-10-19T12:00:00-04:00") throws -> CareTaskStatus {
@@ -41,21 +41,28 @@ struct CareTaskTests {
 
   @Test func aRecurringTaskDoneLateIsNextDueAnIntervalAfterItWasDone() throws {
     let task = try addTask(due: "2026-10-01T09:00:00-04:00", every: CareInterval(count: 3, unit: .month))
-    try complete(task, on: "2026-10-10T18:00:00-04:00")
+    try record(task, on: "2026-10-10T18:00:00-04:00")
     #expect(try status(of: task).task.dueDate == instant("2027-01-10T18:00:00-05:00"))
   }
 
   @Test func aRecurringTaskDoneEarlyIsNextDueAnIntervalAfterItWasDone() throws {
     let task = try addTask(due: "2026-11-01T09:00:00-04:00", every: CareInterval(count: 1, unit: .month))
-    try complete(task, on: "2026-10-19T08:00:00-04:00")
+    try record(task, on: "2026-10-19T08:00:00-04:00")
     #expect(try status(of: task).task.dueDate == instant("2026-11-19T08:00:00-05:00"))
+  }
+
+  @Test func aFirstRecordBackdatedFromTheShelterCountsTheNextDueDateFromThen() throws {
+    let task = try addTask("Vaccine", due: "2026-12-01T09:00:00-05:00", every: CareInterval(count: 1, unit: .year))
+    try record(task, on: "2025-09-20T09:00:00-04:00", notes: "Given by the shelter")
+    #expect(try status(of: task).task.dueDate == instant("2026-09-20T09:00:00-04:00"))
+    #expect(try status(of: task).state == .overdue)
   }
 
   @Test func aRecordBackdatedBeforeTheLatestLeavesTheDueDate() throws {
     let task = try addTask(due: "2026-10-01T09:00:00-04:00", every: CareInterval(count: 1, unit: .year))
-    try complete(task, on: "2026-10-15T09:00:00-04:00")
+    try record(task, on: "2026-10-15T09:00:00-04:00")
     // The shelter's dose, entered afterwards.
-    try complete(task, on: "2025-11-20T09:00:00-05:00")
+    try record(task, on: "2025-11-20T09:00:00-05:00")
     #expect(try status(of: task).task.dueDate == instant("2027-10-15T09:00:00-04:00"))
   }
 
@@ -66,13 +73,16 @@ struct CareTaskTests {
     #expect(try status(of: task, at: "2026-10-19T00:00:00-04:00").state == .dueSoon)
     #expect(try status(of: task, at: "2026-10-26T23:59:00-04:00").state == .dueSoon)
     #expect(try status(of: task, at: "2026-10-27T00:00:00-04:00").state == .overdue)
+    // Today shows the due-soon and overdue ones only.
+    #expect(try ["2026-10-18T23:59:00-04:00", "2026-10-19T00:00:00-04:00", "2026-10-27T00:00:00-04:00"].map { try status(of: task, at: $0).isDue } == [false, true, true])
   }
 
   @Test func aOneOffTaskIsDoneOnceItHasACareRecordAndKeepsItsDueDate() throws {
     let task = try addTask("Microchip check", due: "2026-10-12T09:00:00-04:00", every: nil)
     #expect(try status(of: task).state == .overdue)
-    try complete(task, on: "2026-10-19T10:00:00-04:00")
+    try record(task, on: "2026-10-19T10:00:00-04:00")
     #expect(try status(of: task).state == .done)
+    #expect(try status(of: task).isDue == false)
     #expect(try status(of: task, at: "2027-06-01T09:00:00-04:00").state == .done)
     #expect(try status(of: task).task.dueDate == instant("2026-10-12T09:00:00-04:00"))
   }
@@ -80,9 +90,9 @@ struct CareTaskTests {
   @Test func eachCatsHistoryListsItsCareRecordsNewestFirstIncludingBackdatedOnes() throws {
     let vaccine = try addTask("Vaccine", due: "2026-10-01T09:00:00-04:00", every: CareInterval(count: 1, unit: .year))
     let deworming = try addTask(due: "2026-10-01T09:00:00-04:00", every: CareInterval(count: 3, unit: .month))
-    try complete(vaccine, on: "2026-10-15T09:00:00-04:00", notes: "Booster, left leg")
-    try complete(deworming, on: "2026-10-16T09:00:00-04:00")
-    try complete(vaccine, on: "2025-11-20T09:00:00-05:00", notes: "Given by the shelter")
+    try record(vaccine, on: "2026-10-15T09:00:00-04:00", notes: "Booster, left leg")
+    try record(deworming, on: "2026-10-16T09:00:00-04:00")
+    try record(vaccine, on: "2025-11-20T09:00:00-05:00", notes: "Given by the shelter")
     let other = try database.write { db in
       try db.addCat(
         name: "Tofu", photo: nil, birthdate: instant("2024-01-01T00:00:00-05:00"), isNeutered: true,
@@ -91,7 +101,7 @@ struct CareTaskTests {
     }
     try database.write { db in
       let task = try db.addCareTask(for: other.id, title: "Checkup", dueDate: instant("2026-10-01T09:00:00-04:00"), interval: nil)
-      try db.completeCareTask(task.id, on: instant("2026-10-17T09:00:00-04:00"), notes: "", photo: nil)
+      try db.addCareRecord(for: task.id, on: instant("2026-10-17T09:00:00-04:00"), notes: "", photo: nil)
     }
 
     let history = try database.read { try CareRecord.history(for: cat.id).fetchAll($0) }
@@ -101,7 +111,7 @@ struct CareTaskTests {
 
   @Test func theOwnerCanMoveTheDueDateByHandAndDeleteATask() throws {
     var task = try addTask("Vaccine", due: "2026-10-01T09:00:00-04:00", every: CareInterval(count: 1, unit: .year))
-    try complete(task, on: "2026-10-15T09:00:00-04:00")
+    try record(task, on: "2026-10-15T09:00:00-04:00")
     // The vet card says the booster lasts three years.
     task = try status(of: task).task
     task.dueDate = instant("2029-10-15T09:00:00-04:00")

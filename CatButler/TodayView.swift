@@ -28,7 +28,7 @@ struct FeedingsToday: View {
   @FetchAll var foods: [Food]
   @State private var draft: FeedingDraft?
   @State private var isWeighing = false
-  @State private var completing: CareTask?
+  @State private var recording: CareTask?
 
   var body: some View {
     List {
@@ -49,7 +49,7 @@ struct FeedingsToday: View {
     .sheet(item: $draft) { draft in
       NavigationStack { FeedingEditor(draft: draft) }
     }
-    .sheet(item: $completing) { task in
+    .sheet(item: $recording) { task in
       NavigationStack { CareRecordEditor(task: task) }
     }
     .sheet(isPresented: $isWeighing) {
@@ -143,7 +143,7 @@ struct FeedingsToday: View {
     if !today.care.isEmpty {
       Section("Care") {
         ForEach(today.care) { status in
-          CareTaskRow(status: status) { completing = status.task }
+          CareTaskRow(status: status) { recording = status.task }
         }
       }
     }
@@ -196,7 +196,7 @@ private struct TodayRequest: FetchKeyRequest {
     Value(
       day: try db.feedingDay(for: catID), target: try db.calorieTarget(for: catID), isWeighInDue: try db.isWeighInDue(for: catID),
       turningOneNotice: try db.turningOneNotice(for: catID),
-      care: try db.careTasks(for: catID).filter { $0.state == .overdue || $0.state == .dueSoon }
+      care: try db.careTasks(for: catID).filter(\.isDue)
     )
   }
 }

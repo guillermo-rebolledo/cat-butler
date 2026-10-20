@@ -48,7 +48,7 @@ public nonisolated struct CareTask: Hashable, Identifiable, Sendable {
   }
 
   /// A title, and a repeat, if any, of at least one week, month or year.
-  public var isValid: Bool {
+  public static func isValid(title: String, interval: CareInterval?) -> Bool {
     !title.trimmingCharacters(in: .whitespaces).isEmpty && (interval?.count ?? 1) > 0
   }
 }
@@ -102,6 +102,8 @@ public struct CareTaskStatus: Equatable, Identifiable, Sendable {
   public var task: CareTask
   public var state: State
   public var id: CareTask.ID { task.id }
+  /// Shown on Today.
+  public var isDue: Bool { state == .overdue || state == .dueSoon }
 
   /// Days ahead a Care Task counts as due soon.
   public static let dueSoonDays = 7
@@ -113,14 +115,14 @@ extension Database {
     @Dependency(\.uuid) var uuid
     var task = CareTask(id: uuid(), catID: catID, title: title, dueDate: dueDate)
     task.interval = interval
-    guard task.isValid else { throw InvalidCareTask() }
+    guard CareTask.isValid(title: task.title, interval: task.interval) else { throw InvalidCareTask() }
     try CareTask.insert { task }.execute(self)
     return task
   }
 
   /// Saves a changed title, repeat or due date, e.g. the booster date from the vet card.
   public func updateCareTask(_ task: CareTask) throws {
-    guard task.isValid else { throw InvalidCareTask() }
+    guard CareTask.isValid(title: task.title, interval: task.interval) else { throw InvalidCareTask() }
     try CareTask.update(task).execute(self)
   }
 
@@ -131,7 +133,7 @@ extension Database {
 
   /// Records the task as done, possibly backdated. A recurring task is next due one interval after its latest Care Record.
   @discardableResult
-  public func completeCareTask(_ id: CareTask.ID, on date: Date, notes: String, photo: Data?) throws -> CareRecord {
+  public func addCareRecord(for id: CareTask.ID, on date: Date, notes: String, photo: Data?) throws -> CareRecord {
     @Dependency(\.uuid) var uuid
     @Dependency(\.calendar) var calendar
     guard var task = try CareTask.find(id).fetchOne(self) else { throw NotFound() }

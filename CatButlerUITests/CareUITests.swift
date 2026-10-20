@@ -64,5 +64,15 @@ final class CareUITests: XCTestCase {
     XCTAssertTrue(app.staticTexts["Done"].exists)
     XCTAssertFalse(app.buttons["Mark Rabies vaccine done"].exists)
     attachScreenshot("Backdated one-off", of: app)
+
+    // Deleting the task takes its Care Records with it, so it asks first.
+    app.staticTexts["Rabies vaccine"].firstMatch.tap()
+    XCTAssertTrue(app.navigationBars["Edit Care Task"].waitForExistence(timeout: 5))
+    app.buttons["Delete Care Task"].tap()
+    let confirm = app.buttons["Delete Care Task and Records"]
+    XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+    confirm.tap()
+    XCTAssertTrue(app.staticTexts["No Care Records yet."].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.staticTexts["No Care Tasks yet."].exists)
   }
 }

@@ -24,7 +24,7 @@ private struct CareList: View {
   @Fetch private var tasks: [CareTaskStatus] = []
   @FetchAll var history: [CareRecord]
   @State private var editing: CareTaskDraft?
-  @State private var completing: CareTask?
+  @State private var recording: CareTask?
 
   init(cat: Cat) {
     self.cat = cat
@@ -35,7 +35,7 @@ private struct CareList: View {
     List {
       Section {
         ForEach(tasks) { status in
-          CareTaskRow(status: status) { completing = status.task }
+          CareTaskRow(status: status) { recording = status.task }
             .contentShape(.rect)
             .onTapGesture { editing = CareTaskDraft(status.task) }
         }
@@ -56,7 +56,7 @@ private struct CareList: View {
     .sheet(item: $editing) { draft in
       NavigationStack { CareTaskEditor(draft: draft) }
     }
-    .sheet(item: $completing) { task in
+    .sheet(item: $recording) { task in
       NavigationStack { CareRecordEditor(task: task) }
     }
     .task(id: cat.id) {
@@ -153,15 +153,14 @@ struct CareTaskDraft: Identifiable {
     self.dueDate = dueDate
   }
 
-  var isValid: Bool {
-    !title.trimmingCharacters(in: .whitespaces).isEmpty && (!repeats || interval.count > 0)
-  }
+  var isValid: Bool { CareTask.isValid(title: title, interval: repeats ? interval : nil) }
 }
 
 struct CareTaskEditor: View {
   @State var draft: CareTaskDraft
   @Dependency(\.defaultDatabase) var database
   @Environment(\.dismiss) private var dismiss
+  @State private var isConfirmingDelete = false
 
   var body: some View {
     Form {
@@ -200,7 +199,14 @@ struct CareTaskEditor: View {
         if draft.repeats { Text("Once done, it's next due one interval after the day it was done.") }
       }
       if draft.task != nil {
-        Section { Button("Delete Care Task", role: .destructive, action: delete) }
+        Section {
+          Button("Delete Care Task", role: .destructive) { isConfirmingDelete = true }
+            .confirmationDialog("Delete \(draft.title)?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
+              Button("Delete Care Task and Records", role: .destructive, action: delete)
+            } message: {
+              Text("Its Care Records are deleted too.")
+            }
+        }
       }
     }
     .navigationTitle(draft.task == nil ? "Add Care Task" : "Edit Care Task")
@@ -284,7 +290,7 @@ struct CareRecordEditor: View {
 
   private func save() {
     let saved = withErrorReporting {
-      try database.write { try $0.completeCareTask(task.id, on: date, notes: notes, photo: photo) }
+      try database.write { try $0.addCareRecord(for: task.id, on: date, notes: notes, photo: photo) }
       return true
     }
     if saved == true { dismiss() }
