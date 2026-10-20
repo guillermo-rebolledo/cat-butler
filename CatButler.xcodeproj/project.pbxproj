@@ -23,6 +23,7 @@
 		D1F8297188C56AA2CF1C0A4B /* NumberField.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFA726DBFDCCBE04E6190F74 /* NumberField.swift */; };
 		D3C7FB93F3E176EDC303A2F8 /* CareUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47CE9927801B1A2CF4068C74 /* CareUITests.swift */; };
 		D859284EED9938ABA4F84893 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAE256923D3095CC8EAAAEE8 /* TodayView.swift */; };
+		E1237D30BCC1FA212329302E /* MealNotifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1281DEBB624088020BF47D6 /* MealNotifications.swift */; };
 		EA268734180EAED01358BA88 /* CalorieUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50B1D775EFA337886A6FFCF0 /* CalorieUITests.swift */; };
 /* End PBXBuildFile section */
 
@@ -56,6 +57,7 @@
 		D0EF9D7B84E72196D2FC5663 /* MealsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealsView.swift; sourceTree = "<group>"; };
 		D96C22BAE6F8AE25ED4EF4CC /* CatButler.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = CatButler.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DFA726DBFDCCBE04E6190F74 /* NumberField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberField.swift; sourceTree = "<group>"; };
+		F1281DEBB624088020BF47D6 /* MealNotifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealNotifications.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -105,6 +107,7 @@
 				6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */,
 				BBE9E222DC5B5E605F00D32E /* FirstRunView.swift */,
 				B6224B82986FF4D0CC5BF122 /* FoodsView.swift */,
+				F1281DEBB624088020BF47D6 /* MealNotifications.swift */,
 				D0EF9D7B84E72196D2FC5663 /* MealsView.swift */,
 				DFA726DBFDCCBE04E6190F74 /* NumberField.swift */,
 				AAE256923D3095CC8EAAAEE8 /* TodayView.swift */,
@@ -228,6 +231,7 @@
 				A82EDDE5EBA2E42DFC141ABC /* CatButlerApp.swift in Sources */,
 				B4C054DD8D09E47C77503566 /* FirstRunView.swift in Sources */,
 				46EE55EC12472E4E98AD5B36 /* FoodsView.swift in Sources */,
+				E1237D30BCC1FA212329302E /* MealNotifications.swift in Sources */,
 				AAE4D5AA8BDFF48981A59ACF /* MealsView.swift in Sources */,
 				D1F8297188C56AA2CF1C0A4B /* NumberField.swift in Sources */,
 				D859284EED9938ABA4F84893 /* TodayView.swift in Sources */,

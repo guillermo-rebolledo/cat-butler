@@ -71,6 +71,11 @@ public nonisolated struct Feeding: Hashable, Identifiable, Sendable {
 
   /// Calories eaten, which is what counts toward Intake.
   var eatenKcal: Double { kcal * (eatenFraction ?? 1) }
+
+  /// Whether this Feeding fulfilled `meal` at `time`, that Meal on one day.
+  func fulfils(_ meal: Meal, at time: Date) -> Bool {
+    mealID == meal.id && Swift.abs(date.timeIntervalSince(time)) <= Meal.window
+  }
 }
 
 public struct FoodUsedByMeal: Error {}
@@ -189,7 +194,7 @@ extension Database {
       let time = meal.time(on: now, calendar: calendar)
       let windowEnd = time.addingTimeInterval(Meal.window)
       let state: FeedingDay.State =
-        if let feeding = feedings.first(where: { $0.mealID == meal.id && abs($0.date.timeIntervalSince(time)) <= Meal.window }) {
+        if let feeding = feedings.first(where: { $0.fulfils(meal, at: time) }) {
           .done(feeding)
         } else if now > windowEnd {
           windowEnd < meal.startsAt ? .startsTomorrow : .missed
