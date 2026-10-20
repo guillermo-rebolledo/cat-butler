@@ -1,0 +1,167 @@
+import Dependencies
+import Foundation
+import SQLiteData
+
+/// How often a Care Task repeats, e.g. every 3 months.
+public struct CareInterval: Hashable, Sendable {
+  public enum Unit: String, CaseIterable, QueryBindable, Sendable {
+    case week, month, year
+  }
+
+  public var count: Int
+  public var unit: Unit
+
+  public init(count: Int, unit: Unit) {
+    self.count = count
+    self.unit = unit
+  }
+
+  func date(after date: Date, calendar: Calendar) -> Date {
+    let component: Calendar.Component =
+      switch unit {
+      case .week: .weekOfYear
+      case .month: .month
+      case .year: .year
+      }
+    return calendar.date(byAdding: component, value: count, to: date)!
+  }
+}
+
+/// A one-off or recurring health obligation for a Cat, such as a vaccine or deworming.
+@Table
+public nonisolated struct CareTask: Hashable, Identifiable, Sendable {
+  public let id: UUID
+  public var catID: Cat.ID
+  public var title: String
+  /// Set by hand, e.g. the booster date on the vet card, or moved on when a recurring task is done.
+  public var dueDate: Date
+  public var repeatCount: Int?
+  public var repeatUnit: CareInterval.Unit?
+
+  /// Nil for a one-off task.
+  public var interval: CareInterval? {
+    get { repeatCount.flatMap { count in repeatUnit.map { CareInterval(count: count, unit: $0) } } }
+    set {
+      repeatCount = newValue?.count
+      repeatUnit = newValue?.unit
+    }
+  }
+
+  /// A title, and a repeat, if any, of at least one week, month or year.
+  public var isValid: Bool {
+    !title.trimmingCharacters(in: .whitespaces).isEmpty && (interval?.count ?? 1) > 0
+  }
+}
+
+public struct InvalidCareTask: Error {}
+
+extension CareTask {
+  public struct Preset: Hashable, Sendable {
+    public var title: String
+    public var interval: CareInterval
+  }
+
+  /// Suggestions only: every field stays editable, and the vet's schedule wins.
+  public static let presets = [
+    Preset(title: "Vaccine", interval: CareInterval(count: 1, unit: .year)),
+    Preset(title: "Deworming", interval: CareInterval(count: 3, unit: .month)),
+    Preset(title: "Flea treatment", interval: CareInterval(count: 1, unit: .month)),
+    Preset(title: "Checkup", interval: CareInterval(count: 1, unit: .year)),
+  ]
+}
+
+/// The dated record of a Care Task being done.
+@Table
+public nonisolated struct CareRecord: Hashable, Identifiable, Sendable {
+  public let id: UUID
+  public var careTaskID: CareTask.ID
+  public var date: Date
+  public var notes: String
+  public var photo: Data?
+}
+
+extension CareRecord {
+  /// The Cat's Care Records, newest first.
+  public static func history(for catID: Cat.ID) -> some SelectStatementOf<CareRecord> {
+    CareRecord.where { $0.careTaskID.in(CareTask.where { $0.catID.eq(catID) }.select(\.id)) }
+      .order { $0.date.desc() }
+  }
+}
+
+/// A Care Task with where it stands today.
+public struct CareTaskStatus: Equatable, Identifiable, Sendable {
+  public enum State: Equatable, Sendable {
+    case overdue
+    /// Due within the next week, or today.
+    case dueSoon
+    case later
+    /// A one-off task with a Care Record.
+    case done
+  }
+
+  public var task: CareTask
+  public var state: State
+  public var id: CareTask.ID { task.id }
+
+  /// Days ahead a Care Task counts as due soon.
+  public static let dueSoonDays = 7
+}
+
+extension Database {
+  @discardableResult
+  public func addCareTask(for catID: Cat.ID, title: String, dueDate: Date, interval: CareInterval?) throws -> CareTask {
+    @Dependency(\.uuid) var uuid
+    var task = CareTask(id: uuid(), catID: catID, title: title, dueDate: dueDate)
+    task.interval = interval
+    guard task.isValid else { throw InvalidCareTask() }
+    try CareTask.insert { task }.execute(self)
+    return task
+  }
+
+  /// Saves a changed title, repeat or due date, e.g. the booster date from the vet card.
+  public func updateCareTask(_ task: CareTask) throws {
+    guard task.isValid else { throw InvalidCareTask() }
+    try CareTask.update(task).execute(self)
+  }
+
+  /// Deletes the task and its Care Records.
+  public func deleteCareTask(_ id: CareTask.ID) throws {
+    try CareTask.find(id).delete().execute(self)
+  }
+
+  /// Records the task as done, possibly backdated. A recurring task is next due one interval after its latest Care Record.
+  @discardableResult
+  public func completeCareTask(_ id: CareTask.ID, on date: Date, notes: String, photo: Data?) throws -> CareRecord {
+    @Dependency(\.uuid) var uuid
+    @Dependency(\.calendar) var calendar
+    guard var task = try CareTask.find(id).fetchOne(self) else { throw NotFound() }
+    let latest = try CareRecord.where { $0.careTaskID.eq(id) }.select { $0.date.max() }.fetchOne(self) ?? nil
+    let record = CareRecord(id: uuid(), careTaskID: id, date: date, notes: notes, photo: photo)
+    try CareRecord.insert { record }.execute(self)
+    // One backdated before the latest, e.g. the shelter's dose, is history only.
+    if let interval = task.interval, latest.map({ date >= $0 }) ?? true {
+      task.dueDate = interval.date(after: date, calendar: calendar)
+      try CareTask.update(task).execute(self)
+    }
+    return record
+  }
+
+  /// The Cat's Care Tasks, soonest due first, as of today on the device's local calendar.
+  public func careTasks(for catID: Cat.ID) throws -> [CareTaskStatus] {
+    @Dependency(\.calendar) var calendar
+    @Dependency(\.date.now) var now
+    let today = calendar.startOfDay(for: now)
+    let soon = calendar.date(byAdding: .day, value: CareTaskStatus.dueSoonDays, to: today)!
+    let tasks = try CareTask.where { $0.catID.eq(catID) }.order(by: \.dueDate).fetchAll(self)
+    let recorded = Set(try CareRecord.where { $0.careTaskID.in(tasks.map(\.id)) }.select(\.careTaskID).fetchAll(self))
+    return tasks.map { task in
+      let day = calendar.startOfDay(for: task.dueDate)
+      let state: CareTaskStatus.State =
+        task.interval == nil && recorded.contains(task.id) ? .done
+        : day < today ? .overdue
+        : day <= soon ? .dueSoon
+        : .later
+      return CareTaskStatus(task: task, state: state)
+    }
+  }
+}

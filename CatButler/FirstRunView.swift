@@ -67,7 +67,7 @@ struct FirstRunView: View {
 }
 
 /// Keeps stored photos small: 1024 pt on the long side, JPEG.
-private func downscaled(_ data: Data) -> Data? {
+func downscaled(_ data: Data) -> Data? {
   guard let image = UIImage(data: data) else { return nil }
   let scale = min(1, 1024 / max(image.size.width, image.size.height))
   let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)

@@ -39,7 +39,7 @@ struct RootView: View {
       TabView {
         Tab("Today", systemImage: "sun.max") { TodayView() }
         Tab("Cats", systemImage: "cat") { Text("Cats") }
-        Tab("Care", systemImage: "cross.case") { Text("Care") }
+        Tab("Care", systemImage: "cross.case") { CareView() }
         Tab("Settings", systemImage: "gear") {
           NavigationStack {
             List {

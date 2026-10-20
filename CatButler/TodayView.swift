@@ -17,7 +17,8 @@ struct TodayView: View {
 }
 
 /// The Cat, the turning-one notice once it's an Adult, Intake against the Calorie Target, today's Meals as done,
-/// upcoming or missed, the day's other Feedings, then its weight, with a prompt when a Weigh-in is due.
+/// upcoming or missed, the day's other Feedings, Care Tasks due soon or overdue, then its weight, with a prompt when
+/// a Weigh-in is due.
 struct FeedingsToday: View {
   let cat: Cat
   @Dependency(\.defaultDatabase) var database
@@ -27,6 +28,7 @@ struct FeedingsToday: View {
   @FetchAll var foods: [Food]
   @State private var draft: FeedingDraft?
   @State private var isWeighing = false
+  @State private var completing: CareTask?
 
   var body: some View {
     List {
@@ -41,10 +43,14 @@ struct FeedingsToday: View {
       }
       meals
       otherFeedings
+      care
       weight
     }
     .sheet(item: $draft) { draft in
       NavigationStack { FeedingEditor(draft: draft) }
+    }
+    .sheet(item: $completing) { task in
+      NavigationStack { CareRecordEditor(task: task) }
     }
     .sheet(isPresented: $isWeighing) {
       NavigationStack { WeighInEditor(catID: cat.id) }
@@ -133,6 +139,16 @@ struct FeedingsToday: View {
     }
   }
 
+  @ViewBuilder private var care: some View {
+    if !today.care.isEmpty {
+      Section("Care") {
+        ForEach(today.care) { status in
+          CareTaskRow(status: status) { completing = status.task }
+        }
+      }
+    }
+  }
+
   /// In-app only: a due Weigh-in gets no notification.
   private var weight: some View {
     Section("Weight") {
@@ -168,6 +184,8 @@ private struct TodayRequest: FetchKeyRequest {
     var target: CalorieTarget?
     var isWeighInDue = false
     var turningOneNotice: TurningOneNotice?
+    /// Care Tasks due soon or overdue.
+    var care: [CareTaskStatus] = []
   }
 
   let catID: Cat.ID
@@ -177,7 +195,8 @@ private struct TodayRequest: FetchKeyRequest {
   func fetch(_ db: Database) throws -> Value {
     Value(
       day: try db.feedingDay(for: catID), target: try db.calorieTarget(for: catID), isWeighInDue: try db.isWeighInDue(for: catID),
-      turningOneNotice: try db.turningOneNotice(for: catID)
+      turningOneNotice: try db.turningOneNotice(for: catID),
+      care: try db.careTasks(for: catID).filter { $0.state == .overdue || $0.state == .dueSoon }
     )
   }
 }

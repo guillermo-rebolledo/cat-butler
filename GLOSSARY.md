@@ -59,7 +59,7 @@ A Cat's age band (Kitten under 12 months, Adult, Senior from 10 years), derived 
 _Avoid_: Age group, category
 
 **Care Task**:
-A one-off or recurring health obligation for a Cat with a due date, such as a vaccine, deworming, flea treatment or vet checkup.
+A one-off or recurring health obligation for a Cat with a due date, such as a vaccine, deworming, flea treatment or vet checkup. Due soon within a week of its due date, overdue from the day after; a recurring one is next due one interval after its latest Care Record, and a one-off one is done once it has a Care Record.
 _Avoid_: Reminder, appointment
 
 **Care Record**:
