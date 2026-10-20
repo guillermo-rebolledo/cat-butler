@@ -75,4 +75,42 @@ final class CareUITests: XCTestCase {
     XCTAssertTrue(app.staticTexts["No Care Records yet."].waitForExistence(timeout: 5))
     XCTAssertTrue(app.staticTexts["No Care Tasks yet."].exists)
   }
+
+  @MainActor
+  func testACareRecordCanBeCorrectedOrDeletedOnItsOwn() {
+    let app = XCUIApplication.launchedForTesting()
+    app.completeFirstRun()
+    app.tabBars.buttons["Care"].tap()
+    app.buttons["Add Care Task"].tap()
+    XCTAssertTrue(app.buttons["Flea treatment"].waitForExistence(timeout: 5))
+    app.buttons["Flea treatment"].tap()
+    app.buttons["Save"].tap()
+
+    app.buttons["Mark Flea treatment done"].tap()
+    XCTAssertTrue(app.navigationBars["Flea treatment"].waitForExistence(timeout: 5))
+    app.textFields["Notes"].tap()
+    app.textFields["Notes"].typeText("Spot-on")
+    app.buttons["Save"].tap()
+    XCTAssertTrue(app.containing("Spot-on").waitForExistence(timeout: 5))
+
+    // Actually given on the 15th of last month, with a different product.
+    app.containing("Spot-on").tap()
+    XCTAssertTrue(app.buttons["Delete Care Record"].waitForExistence(timeout: 5))
+    app.pickDay15(monthsAgo: 1)
+    app.textFields.firstMatch.clearAndType("Collar")
+    attachScreenshot("Correcting a Care Record", of: app)
+    app.buttons["Save"].tap()
+    XCTAssertTrue(app.containing("Collar").waitForExistence(timeout: 5))
+    XCTAssertFalse(app.containing("Spot-on").exists)
+    // Monthly from the 15th of last month: due on the 15th of this month.
+    let month = Date.now.formatted(.dateTime.month(.abbreviated).locale(Locale(identifier: "en_US")))
+    XCTAssertTrue(app.containing("Due \(month) 15,").exists)
+    attachScreenshot("Corrected Care Record", of: app)
+
+    // Logged by mistake: it's due again.
+    app.containing("Collar").swipeLeft()
+    app.buttons["Delete"].tap()
+    XCTAssertTrue(app.staticTexts["No Care Records yet."].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.buttons["Mark Flea treatment done"].exists)
+  }
 }

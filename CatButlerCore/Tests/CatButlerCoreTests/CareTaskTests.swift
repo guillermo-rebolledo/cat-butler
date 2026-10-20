@@ -29,7 +29,8 @@ struct CareTaskTests {
     try database.write { try $0.addCareTask(for: cat.id, title: title, dueDate: instant(due), interval: interval) }
   }
 
-  func record(_ task: CareTask, on iso8601: String, notes: String = "") throws {
+  @discardableResult
+  func record(_ task: CareTask, on iso8601: String, notes: String = "") throws -> CareRecord {
     try database.write { try $0.addCareRecord(for: task.id, on: instant(iso8601), notes: notes, photo: nil) }
   }
 
@@ -135,5 +136,57 @@ struct CareTaskTests {
     task.interval = CareInterval(count: count, unit: .month)
     #expect(throws: InvalidCareTask.self) { try database.write { try $0.updateCareTask(task) } }
     #expect(try database.read { try $0.careTasks(for: cat.id) }.map(\.task.title) == ["Deworming"])
+  }
+
+  @Test func correctingTheLatestRecordsDateMovesTheNextDueDate() throws {
+    let task = try addTask(due: "2026-10-01T09:00:00-04:00", every: CareInterval(count: 1, unit: .month))
+    var latest = try record(task, on: "2026-10-18T09:00:00-04:00")
+    // Actually given the week before.
+    latest.date = instant("2026-10-11T09:00:00-04:00")
+    try database.write { try $0.updateCareRecord(latest) }
+    #expect(try status(of: task).task.dueDate == instant("2026-11-11T09:00:00-05:00"))
+    #expect(try database.read { try CareRecord.history(for: cat.id).fetchAll($0) } == [latest])
+  }
+
+  @Test func correctingAnOlderRecordLeavesAHandSetDueDate() throws {
+    var task = try addTask("Vaccine", due: "2026-10-01T09:00:00-04:00", every: CareInterval(count: 1, unit: .year))
+    var shelter = try record(task, on: "2025-09-20T09:00:00-04:00")
+    try record(task, on: "2026-10-15T09:00:00-04:00")
+    task = try status(of: task).task
+    task.dueDate = instant("2029-10-15T09:00:00-04:00")
+    try database.write { try $0.updateCareTask(task) }
+
+    shelter.notes = "Given by the shelter"
+    shelter.date = instant("2025-09-22T09:00:00-04:00")
+    try database.write { try $0.updateCareRecord(shelter) }
+    #expect(try status(of: task).task.dueDate == instant("2029-10-15T09:00:00-04:00"))
+    #expect(try database.read { try CareRecord.history(for: cat.id).fetchAll($0) }.last == shelter)
+  }
+
+  @Test func deletingTheLatestRecordFallsBackToTheOneBefore() throws {
+    let task = try addTask(due: "2026-07-01T09:00:00-04:00", every: CareInterval(count: 3, unit: .month))
+    try record(task, on: "2026-07-01T09:00:00-04:00")
+    let mistake = try record(task, on: "2026-10-18T09:00:00-04:00")
+    try database.write { try $0.deleteCareRecord(mistake.id) }
+    #expect(try status(of: task).task.dueDate == instant("2026-10-01T09:00:00-04:00"))
+    #expect(try status(of: task).state == .overdue)
+    #expect(try database.read { try CareRecord.history(for: cat.id).fetchAll($0) }.map(\.date) == [instant("2026-07-01T09:00:00-04:00")])
+  }
+
+  @Test func deletingARecurringTasksOnlyRecordLeavesItDueThatDay() throws {
+    let task = try addTask(due: "2026-10-15T09:00:00-04:00", every: CareInterval(count: 1, unit: .month))
+    // Tapped Done by mistake: the hand-set date is gone, so it's due from the day it wasn't actually done.
+    let mistake = try record(task, on: "2026-10-19T08:00:00-04:00")
+    try database.write { try $0.deleteCareRecord(mistake.id) }
+    #expect(try status(of: task).task.dueDate == instant("2026-10-19T08:00:00-04:00"))
+    #expect(try status(of: task).state == .dueSoon)
+  }
+
+  @Test func deletingAOneOffTasksRecordMakesItNoLongerDone() throws {
+    let task = try addTask("Microchip check", due: "2026-10-12T09:00:00-04:00", every: nil)
+    let mistake = try record(task, on: "2026-10-19T10:00:00-04:00")
+    try database.write { try $0.deleteCareRecord(mistake.id) }
+    #expect(try status(of: task).state == .overdue)
+    #expect(try status(of: task).task.dueDate == instant("2026-10-12T09:00:00-04:00"))
   }
 }

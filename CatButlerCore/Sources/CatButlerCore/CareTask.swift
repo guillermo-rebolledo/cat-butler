@@ -135,17 +135,49 @@ extension Database {
   @discardableResult
   public func addCareRecord(for id: CareTask.ID, on date: Date, notes: String, photo: Data?) throws -> CareRecord {
     @Dependency(\.uuid) var uuid
-    @Dependency(\.calendar) var calendar
-    guard var task = try CareTask.find(id).fetchOne(self) else { throw NotFound() }
-    let latest = try CareRecord.where { $0.careTaskID.eq(id) }.select { $0.date.max() }.fetchOne(self) ?? nil
+    guard try CareTask.find(id).fetchCount(self) > 0 else { throw NotFound() }
+    let latest = try latestCareRecordDate(of: id)
     let record = CareRecord(id: uuid(), careTaskID: id, date: date, notes: notes, photo: photo)
     try CareRecord.insert { record }.execute(self)
-    // One backdated before the latest, e.g. the shelter's dose, is history only.
-    if let interval = task.interval, latest.map({ date >= $0 }) ?? true {
-      task.dueDate = interval.date(after: date, calendar: calendar)
-      try CareTask.update(task).execute(self)
-    }
+    try followLatestCareRecord(of: id, from: latest)
     return record
+  }
+
+  /// Saves a corrected date, notes or photo. The record stays with its Care Task.
+  public func updateCareRecord(_ record: CareRecord) throws {
+    guard let old = try CareRecord.find(record.id).fetchOne(self) else { throw NotFound() }
+    var record = record
+    record.careTaskID = old.careTaskID
+    let latest = try latestCareRecordDate(of: old.careTaskID)
+    try CareRecord.update(record).execute(self)
+    try followLatestCareRecord(of: old.careTaskID, from: latest)
+  }
+
+  /// A recurring task falls back to the Care Record before. With none left it's due from the deleted record's date,
+  /// since the due date set by hand is gone; a one-off task is no longer done.
+  public func deleteCareRecord(_ id: CareRecord.ID) throws {
+    guard let old = try CareRecord.find(id).fetchOne(self) else { return }
+    let latest = try latestCareRecordDate(of: old.careTaskID)
+    try CareRecord.find(id).delete().execute(self)
+    try followLatestCareRecord(of: old.careTaskID, from: latest)
+    if try latestCareRecordDate(of: old.careTaskID) == nil {
+      try CareTask.find(old.careTaskID).where { $0.repeatCount.isNot(nil) }.update { $0.dueDate = old.date }.execute(self)
+    }
+  }
+
+  private func latestCareRecordDate(of taskID: CareTask.ID) throws -> Date? {
+    try CareRecord.where { $0.careTaskID.eq(taskID) }.select { $0.date.max() }.fetchOne(self) ?? nil
+  }
+
+  /// A recurring task whose latest Care Record changed is next due one interval after the new latest. One added or
+  /// corrected before the latest, e.g. the shelter's dose, is history only and leaves a hand-set due date alone.
+  private func followLatestCareRecord(of taskID: CareTask.ID, from before: Date?) throws {
+    @Dependency(\.calendar) var calendar
+    guard var task = try CareTask.find(taskID).fetchOne(self), let interval = task.interval,
+      let latest = try latestCareRecordDate(of: taskID), latest != before
+    else { return }
+    task.dueDate = interval.date(after: latest, calendar: calendar)
+    try CareTask.update(task).execute(self)
   }
 
   /// The Cat's Care Tasks, soonest due first, as of today on the device's local calendar.

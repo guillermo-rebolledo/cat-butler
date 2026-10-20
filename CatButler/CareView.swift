@@ -25,6 +25,8 @@ private struct CareList: View {
   @FetchAll var history: [CareRecord]
   @State private var editing: CareTaskDraft?
   @State private var recording: CareTask?
+  @State private var correcting: CareRecord?
+  @Dependency(\.defaultDatabase) var database
 
   init(cat: Cat) {
     self.cat = cat
@@ -45,7 +47,11 @@ private struct CareList: View {
       }
       Section("\(cat.name)'s History") {
         ForEach(history) { record in
-          CareRecordRow(record: record, title: tasks.first { $0.id == record.careTaskID }?.task.title ?? "")
+          Button { correcting = record } label: {
+            CareRecordRow(record: record, title: task(of: record)?.title ?? "")
+          }
+          .tint(.primary)
+          .swipeActions { Button("Delete", role: .destructive) { delete(record) } }
         }
         if history.isEmpty { Text("No Care Records yet.").foregroundStyle(.secondary) }
       }
@@ -59,9 +65,20 @@ private struct CareList: View {
     .sheet(item: $recording) { task in
       NavigationStack { CareRecordEditor(task: task) }
     }
+    .sheet(item: $correcting) { record in
+      if let task = task(of: record) { NavigationStack { CareRecordEditor(task: task, record: record) } }
+    }
     .task(id: cat.id) {
       await withErrorReporting { try await $tasks.load(CareTasksRequest(catID: cat.id, refreshedAt: now)) }
     }
+  }
+
+  private func task(of record: CareRecord) -> CareTask? {
+    tasks.first { $0.id == record.careTaskID }?.task
+  }
+
+  private func delete(_ record: CareRecord) {
+    withErrorReporting { try database.write { try $0.deleteCareRecord(record.id) } }
   }
 }
 
@@ -244,9 +261,10 @@ struct CareTaskEditor: View {
   }
 }
 
-/// Marks a Care Task done with a Care Record, dated today or backdated.
+/// Marks a Care Task done with a Care Record, dated today or backdated, or corrects one when `record` is given.
 struct CareRecordEditor: View {
   let task: CareTask
+  var record: CareRecord?
   @Dependency(\.defaultDatabase) var database
   @Dependency(\.date.now) var now
   @Environment(\.dismiss) private var dismiss
@@ -255,10 +273,13 @@ struct CareRecordEditor: View {
   @State private var photoItem: PhotosPickerItem?
   @State private var photo: Data?
 
-  init(task: CareTask) {
+  init(task: CareTask, record: CareRecord? = nil) {
     @Dependency(\.date.now) var now
     self.task = task
-    _date = State(initialValue: now)
+    self.record = record
+    _date = State(initialValue: record?.date ?? now)
+    _notes = State(initialValue: record?.notes ?? "")
+    _photo = State(initialValue: record?.photo)
   }
 
   var body: some View {
@@ -275,6 +296,10 @@ struct CareRecordEditor: View {
             Label("Add Photo", systemImage: "photo")
           }
         }
+        if photo != nil { Button("Remove Photo", role: .destructive) { photo = nil } }
+      }
+      if record != nil {
+        Section { Button("Delete Care Record", role: .destructive, action: delete) }
       }
     }
     .navigationTitle(task.title)
@@ -290,10 +315,28 @@ struct CareRecordEditor: View {
 
   private func save() {
     let saved = withErrorReporting {
-      try database.write { try $0.addCareRecord(for: task.id, on: date, notes: notes, photo: photo) }
+      try database.write { db in
+        if var record {
+          record.date = date
+          record.notes = notes
+          record.photo = photo
+          try db.updateCareRecord(record)
+        } else {
+          try db.addCareRecord(for: task.id, on: date, notes: notes, photo: photo)
+        }
+      }
       return true
     }
     if saved == true { dismiss() }
+  }
+
+  private func delete() {
+    guard let record else { return }
+    let deleted = withErrorReporting {
+      try database.write { try $0.deleteCareRecord(record.id) }
+      return true
+    }
+    if deleted == true { dismiss() }
   }
 }
 
