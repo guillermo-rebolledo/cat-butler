@@ -14,6 +14,7 @@ struct CatButlerApp: App {
       }
       $0.defaultDatabase = try! appDatabase()
     }
+    MealNotifications.shared.start()
   }
 
   var body: some Scene {
@@ -25,8 +26,21 @@ struct RootView: View {
   @FetchAll(Cat.order(by: \.name)) var cats
   @FetchAll var foods: [Food]
   @FetchAll var meals: [Meal]
+  @Fetch var mealReminders: [MealReminder] = []
+  @Environment(\.scenePhase) private var scenePhase
+  @Dependency(\.date.now) var now
 
   var body: some View {
+    content
+      // On every return to the app, so the plan moves on with the clock, and on every change to the database.
+      .task(id: scenePhase) {
+        guard scenePhase == .active else { return }
+        await withErrorReporting { try await $mealReminders.load(MealRemindersRequest(refreshedAt: now)) }
+      }
+      .onChange(of: mealReminders) { MealNotifications.shared.schedule(mealReminders) }
+  }
+
+  @ViewBuilder private var content: some View {
     if cats.isEmpty {
       FirstRunView()
     } else if foods.isEmpty {
@@ -34,7 +48,7 @@ struct RootView: View {
       NavigationStack { FoodEditor() }
     } else if meals.isEmpty, let cat = cats.first {
       // First-run step 3: the Meals.
-      NavigationStack { MealScheduleEditor(cat: cat) }
+      NavigationStack { MealScheduleEditor(cat: cat, isFirstRun: true) }
     } else {
       TabView {
         Tab("Today", systemImage: "sun.max") { TodayView() }
@@ -52,5 +66,14 @@ struct RootView: View {
         }
       }
     }
+  }
+}
+
+private struct MealRemindersRequest: FetchKeyRequest {
+  /// Only here so each return to the app is a new request.
+  let refreshedAt: Date
+
+  func fetch(_ db: Database) throws -> [MealReminder] {
+    try db.mealReminders()
   }
 }

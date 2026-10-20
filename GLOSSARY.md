@@ -36,6 +36,10 @@ _Avoid_: Extra feeding, snack
 A Meal whose window passed without a Feeding fulfilling it. A Meal added or moved after its window passed isn't Missed until the next day, unless it was already Missed.
 _Avoid_: Skipped meal, late meal
 
+**Meal Reminder**:
+A notification at a Meal's time whose Fed ✓ action logs the Meal's usual Feeding, followed 30 minutes later by one follow-up unless the Meal was fulfilled by then.
+_Avoid_: Alert, alarm
+
 **Food**:
 A specific product or food a Cat eats, with its serving unit (can, pouch, gram, cup) and calories per unit; a Food may be marked as a treat or as free-fed.
 _Avoid_: Product, brand, item

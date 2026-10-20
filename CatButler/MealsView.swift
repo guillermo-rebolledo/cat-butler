@@ -5,6 +5,7 @@ import SwiftUI
 /// A Cat's daily Meals. First-run step 3, and Settings → Meals.
 struct MealScheduleEditor: View {
   let cat: Cat
+  var isFirstRun = false
   @Dependency(\.defaultDatabase) var database
   @Dependency(\.uuid) var uuid
   @Dependency(\.date.now) var now
@@ -31,6 +32,15 @@ struct MealScheduleEditor: View {
           Text("Meals need a Food that isn't free-fed. Add one in Settings → Foods.")
         } else {
           Text("Meals are the same every day. A Feeding within 2 hours of a Meal counts for it.")
+        }
+      }
+      if isFirstRun {
+        Section {
+          Text("Cat Butler reminds you at each Meal, and once more 30 minutes later if it isn't logged. Tap Fed ✓ on the reminder to log it without opening the app.")
+        } header: {
+          Text("Reminders")
+        } footer: {
+          Text("After you save, iOS asks to allow notifications.")
         }
       }
     }
@@ -64,6 +74,18 @@ struct MealScheduleEditor: View {
   }
 
   private func save() {
+    // First run: the explanation stays on screen behind iOS's permission alert.
+    guard !isFirstRun else {
+      Task {
+        await MealNotifications.shared.requestPermission()
+        write()
+      }
+      return
+    }
+    write()
+  }
+
+  private func write() {
     let saved = withErrorReporting {
       try database.write { try $0.saveMeals(meals, for: cat.id) }
       return true
