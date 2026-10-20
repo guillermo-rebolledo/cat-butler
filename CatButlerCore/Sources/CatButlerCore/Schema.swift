@@ -246,6 +246,36 @@ public func appDatabase() throws -> any DatabaseWriter {
     try #sql(#"ALTER TABLE "cats" ADD COLUMN "isTurningOneNoticeDone" INTEGER NOT NULL ON CONFLICT REPLACE DEFAULT 0"#).execute(db)
     try #sql(#"UPDATE "cats" SET "isTurningOneNoticeDone" = 1 WHERE "birthdate" <= datetime('now', '-1 year')"#).execute(db)
   }
+  // Care Records link only to their Care Task, so each has the single foreign key sharing needs.
+  migrator.registerMigration("Create care tasks and care records") { db in
+    try #sql(
+      """
+      CREATE TABLE "careTasks" (
+        "id" TEXT PRIMARY KEY NOT NULL ON CONFLICT REPLACE DEFAULT (uuid()),
+        "catID" TEXT NOT NULL REFERENCES "cats"("id") ON DELETE CASCADE,
+        "title" TEXT NOT NULL ON CONFLICT REPLACE DEFAULT '',
+        "dueDate" TEXT NOT NULL,
+        "repeatCount" INTEGER,
+        "repeatUnit" TEXT
+      ) STRICT
+      """
+    )
+    .execute(db)
+    try #sql(
+      """
+      CREATE TABLE "careRecords" (
+        "id" TEXT PRIMARY KEY NOT NULL ON CONFLICT REPLACE DEFAULT (uuid()),
+        "careTaskID" TEXT NOT NULL REFERENCES "careTasks"("id") ON DELETE CASCADE,
+        "date" TEXT NOT NULL,
+        "notes" TEXT NOT NULL ON CONFLICT REPLACE DEFAULT '',
+        "photo" BLOB
+      ) STRICT
+      """
+    )
+    .execute(db)
+    try #sql(#"CREATE INDEX "idx_careTasks_catID" ON "careTasks"("catID")"#).execute(db)
+    try #sql(#"CREATE INDEX "idx_careRecords_careTaskID" ON "careRecords"("careTaskID")"#).execute(db)
+  }
   try migrator.migrate(database)
   return database
 }
