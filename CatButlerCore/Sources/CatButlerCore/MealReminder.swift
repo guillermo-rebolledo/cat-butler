@@ -2,7 +2,7 @@ import Dependencies
 import Foundation
 import SQLiteData
 
-/// A notification the owner should get for one Meal on one day: at its time, then once more if it's still unfed.
+/// A Meal Reminder: a notification for one Meal on one day, at its time or as the follow-up if it's still unfulfilled.
 public struct MealReminder: Equatable, Identifiable, Sendable {
   public enum Kind: String, Sendable {
     case due
@@ -10,7 +10,10 @@ public struct MealReminder: Equatable, Identifiable, Sendable {
   }
 
   public var kind: Kind
+  /// When it fires.
   public var date: Date
+  /// The Meal on that day, which "Fed ✓" logs.
+  public var mealTime: Date
   public var meal: Meal
   public var catName: String
   public var food: Food
@@ -21,6 +24,8 @@ public struct MealReminder: Equatable, Identifiable, Sendable {
   /// A follow-up comes this long after its Meal, unless the Meal was fulfilled by then.
   public static let followUpDelay: TimeInterval = 30 * 60
   /// How many days ahead, today included, the plan covers.
+  // ponytail: the plan only moves on when the app opens or Fed ✓ runs, so reminders stop if the app isn't opened for
+  // this long (less with many Meals, as iOS keeps 64); a background app refresh task would keep it going.
   public static let days = 7
 }
 
@@ -32,8 +37,9 @@ extension Database {
     @Dependency(\.date.now) var now
     let cats = Dictionary(uniqueKeysWithValues: try Cat.all.fetchAll(self).map { ($0.id, $0) })
     let foods = Dictionary(uniqueKeysWithValues: try Food.all.fetchAll(self).map { ($0.id, $0) })
-    let feedings = try Feeding.where { $0.mealID.isNot(nil) && $0.date >= now.addingTimeInterval(-2 * Meal.window) }
-      .fetchAll(self)
+    // The earliest Meal with a reminder left is a follow-up away; Feedings before its window can't fulfil it.
+    let earliest = now.addingTimeInterval(-MealReminder.followUpDelay - Meal.window)
+    let feedings = try Feeding.where { $0.mealID.isNot(nil) && $0.date >= earliest }.fetchAll(self)
     var reminders: [MealReminder] = []
     for meal in try Meal.all.fetchAll(self) {
       guard let cat = cats[meal.catID], let food = foods[meal.foodID], !food.isFreeFed else { continue }
@@ -42,24 +48,24 @@ extension Database {
         guard !feedings.contains(where: { $0.fulfils(meal, at: time) }) else { continue }
         for (kind, date) in [(MealReminder.Kind.due, time), (.followUp, time.addingTimeInterval(MealReminder.followUpDelay))]
         where date > now {
-          reminders.append(MealReminder(kind: kind, date: date, meal: meal, catName: cat.name, food: food))
+          reminders.append(MealReminder(kind: kind, date: date, mealTime: time, meal: meal, catName: cat.name, food: food))
         }
       }
     }
     return reminders.sorted { $0.date < $1.date }
   }
 
-  /// "Fed ✓" on a reminder: logs the Meal's default Feeding now. Nil, logging nothing, when the Meal is gone or
-  /// already fulfilled, such as Fed ✓ tapped again on a follow-up still on screen.
+  /// "Fed ✓" on the reminder for `mealTime`, the Meal on one day: logs the Meal's default Feeding now, or at the Meal's
+  /// time once its window has passed, since it was fed and only not logged. Nil, logging nothing, when the Meal is
+  /// gone or that day's is already fulfilled, such as Fed ✓ tapped again on a follow-up still on screen.
   @discardableResult
-  public func logFeeding(forMeal mealID: Meal.ID) throws -> Feeding? {
-    @Dependency(\.calendar) var calendar
+  public func logFeeding(forMeal mealID: Meal.ID, at mealTime: Date) throws -> Feeding? {
     @Dependency(\.date.now) var now
     guard let meal = try Meal.find(mealID).fetchOne(self) else { return nil }
-    let time = meal.time(nearest: now, calendar: calendar)
-    let window = (time.addingTimeInterval(-Meal.window), time.addingTimeInterval(Meal.window))
-    let fulfilled = try Feeding.where { $0.mealID.eq(mealID) && $0.date >= window.0 && $0.date <= window.1 }.fetchCount(self) > 0
-    guard !fulfilled else { return nil }
-    return try logFeeding(catID: meal.catID, foodID: meal.foodID, amount: meal.amount, at: now)
+    let window = mealTime.addingTimeInterval(-Meal.window)...mealTime.addingTimeInterval(Meal.window)
+    let feedings = try Feeding.where { $0.mealID.eq(mealID) && $0.date >= window.lowerBound && $0.date <= window.upperBound }
+      .fetchAll(self)
+    guard !feedings.contains(where: { $0.fulfils(meal, at: mealTime) }) else { return nil }
+    return try logFeeding(catID: meal.catID, foodID: meal.foodID, amount: meal.amount, at: window.contains(now) ? now : mealTime)
   }
 }

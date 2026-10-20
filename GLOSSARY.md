@@ -37,7 +37,7 @@ A Meal whose window passed without a Feeding fulfilling it. A Meal added or move
 _Avoid_: Skipped meal, late meal
 
 **Meal Reminder**:
-A notification at a Meal's time whose Fed ✓ action logs the Meal's usual Feeding, followed 30 minutes later by one follow-up unless the Meal was fulfilled by then.
+A notification about a Meal, with a Fed ✓ action that logs the Meal's usual Feeding: one at the Meal's time, and one follow-up 30 minutes later unless the Meal was fulfilled by then.
 _Avoid_: Alert, alarm
 
 **Food**:

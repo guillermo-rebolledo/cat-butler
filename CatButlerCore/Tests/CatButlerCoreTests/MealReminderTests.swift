@@ -101,7 +101,7 @@ struct MealReminderTests {
     let dinner = meal(at: 18 * 60)
     try save(dinner)
     try withDependencies { $0.date.now = instant("2026-10-19T18:05:00-04:00") } operation: {
-      let feeding = try database.write { try $0.logFeeding(forMeal: dinner.id) }
+      let feeding = try database.write { try $0.logFeeding(forMeal: dinner.id, at: instant("2026-10-19T18:00:00-04:00")) }
       #expect(feeding?.mealID == dinner.id)
       #expect(feeding?.foodID == pate.id)
       #expect(feeding?.amount == 0.5)
@@ -114,9 +114,20 @@ struct MealReminderTests {
     let dinner = meal(at: 18 * 60)
     try save(dinner)
     try withDependencies { $0.date.now = instant("2026-10-19T18:35:00-04:00") } operation: {
-      try database.write { _ = try $0.logFeeding(forMeal: dinner.id) }
-      #expect(try database.write { try $0.logFeeding(forMeal: dinner.id) } == nil)
+      try database.write { _ = try $0.logFeeding(forMeal: dinner.id, at: instant("2026-10-19T18:00:00-04:00")) }
+      #expect(try database.write { try $0.logFeeding(forMeal: dinner.id, at: instant("2026-10-19T18:00:00-04:00")) } == nil)
       #expect(try database.read { try Feeding.fetchCount($0) } == 1)
+    }
+  }
+
+  /// Fed ✓ tapped long after the reminder, from Notification Center: the Meal was fed, just not logged.
+  @Test func fedAfterTheWindowLogsAtTheMealsTime() throws {
+    let dinner = meal(at: 18 * 60)
+    try save(dinner)
+    try withDependencies { $0.date.now = instant("2026-10-20T00:30:00-04:00") } operation: {
+      let feeding = try database.write { try $0.logFeeding(forMeal: dinner.id, at: instant("2026-10-19T18:00:00-04:00")) }
+      #expect(feeding?.date == instant("2026-10-19T18:00:00-04:00"))
+      #expect(feeding?.mealID == dinner.id)
     }
   }
 }

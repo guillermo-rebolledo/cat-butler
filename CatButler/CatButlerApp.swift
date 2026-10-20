@@ -35,7 +35,11 @@ struct RootView: View {
       // On every return to the app, so the plan moves on with the clock, and on every change to the database.
       .task(id: scenePhase) {
         guard scenePhase == .active else { return }
+        MealNotifications.shared.clearDelivered()
         await withErrorReporting { try await $mealReminders.load(MealRemindersRequest(refreshedAt: now)) }
+        // Here too, not only on change: a plan that loads empty must still clear what's pending.
+        MealNotifications.shared.schedule(mealReminders)
+        if !meals.isEmpty { await MealNotifications.shared.requestPermission() }
       }
       .onChange(of: mealReminders) { MealNotifications.shared.schedule(mealReminders) }
   }
