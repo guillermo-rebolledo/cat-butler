@@ -41,7 +41,7 @@ A notification about a Meal, with a Fed ✓ action that logs the Meal's usual Fe
 _Avoid_: Alert, alarm
 
 **Feed All**:
-One action that logs a Feeding for every Cat with a Meal due now, each with that Cat's Meal's usual Food and amount; when two of a Cat's Meals are open, the nearer one. Cats with no Meal due now get none.
+One action that logs a Feeding for every Cat with a current Meal (the nearest of its Meals not yet fed whose window is open), each with that Meal's usual Food and amount. Cats with no current Meal get none.
 _Avoid_: Bulk feed, feed everyone
 
 **Food**:

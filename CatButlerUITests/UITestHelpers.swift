@@ -12,7 +12,7 @@ extension XCUIApplication {
 
   /// First-run step 1, or Cats → Add Cat: a Kitten, 9 lb.
   @MainActor
-  func addFirstCat(named catName: String = "Miso") {
+  func fillInCat(named catName: String = "Miso") {
     let name = textFields["Name"]
     XCTAssertTrue(name.waitForExistence(timeout: 5))
     name.tap()
@@ -63,7 +63,7 @@ extension XCUIApplication {
   /// Finishes first run with Miso, Tuna pâté and four Meals.
   @MainActor
   func completeFirstRun() {
-    addFirstCat()
+    fillInCat()
     buttons["Continue"].tap()
     fillInFirstFood()
     buttons["Save"].tap()
@@ -155,6 +155,16 @@ extension XCUIApplication {
     XCTAssertTrue(navigationBars["Edit Cat"].waitForExistence(timeout: 5))
     buttons["Meals"].tap()
     XCTAssertTrue(navigationBars["Meals"].waitForExistence(timeout: 5))
+  }
+
+  /// Picks `cat` in the toolbar's Cat switcher.
+  @MainActor
+  func switchCat(to cat: String) {
+    // Labelled "Cat, " and the Cat shown.
+    navigationBars.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Cat, '")).firstMatch.tap()
+    let option = buttons[cat].firstMatch
+    XCTAssertTrue(option.waitForExistence(timeout: 5))
+    option.tap()
   }
 
   @MainActor

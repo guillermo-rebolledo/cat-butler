@@ -47,29 +47,6 @@ private struct CurrentMealsRequest: FetchKeyRequest {
   }
 }
 
-/// Picks the Cat Today and Care show, once there's more than one.
-struct CatSwitcher: ToolbarContent {
-  let cats: [Cat]
-  @Binding var catID: Cat.ID?
-
-  var body: some ToolbarContent {
-    ToolbarItem(placement: .topBarLeading) {
-      if cats.count > 1, let cat = cats.selected(catID) {
-        Picker("Cat", selection: Binding { cat.id } set: { catID = $0 }) {
-          ForEach(cats) { Text($0.name).tag($0.id) }
-        }
-      }
-    }
-  }
-}
-
-extension [Cat] {
-  /// The chosen Cat, or the first while none is chosen or the chosen one is gone.
-  func selected(_ id: Cat.ID?) -> Cat? {
-    first { $0.id == id } ?? first
-  }
-}
-
 /// The Cat, the turning-one notice once it's an Adult, Intake against the Calorie Target, today's Meals as done,
 /// upcoming or missed, the day's other Feedings, Care Tasks due soon or overdue, then its weight, with a prompt when
 /// a Weigh-in is due.

@@ -20,11 +20,34 @@ struct CatsView: View {
   }
 }
 
+/// Picks the Cat Today and Care show, once there's more than one.
+struct CatSwitcher: ToolbarContent {
+  let cats: [Cat]
+  @Binding var catID: Cat.ID?
+
+  var body: some ToolbarContent {
+    ToolbarItem(placement: .topBarLeading) {
+      if cats.count > 1, let cat = cats.selected(catID) {
+        Picker("Cat", selection: Binding { cat.id } set: { catID = $0 }) {
+          ForEach(cats) { Text($0.name).tag($0.id) }
+        }
+      }
+    }
+  }
+}
+
+extension [Cat] {
+  /// The chosen Cat, or the first while none is chosen or the chosen one is gone.
+  func selected(_ id: Cat.ID?) -> Cat? {
+    first { $0.id == id } ?? first
+  }
+}
+
 /// Adds a Cat, as first-run step 1 or from the Cats tab, or edits one. Its weight is asked once, as the first
 /// Weigh-in; after that it's on the weight chart.
 struct CatEditor: View {
   let cat: Cat?
-  var isFirstRun = false
+  let isFirstRun: Bool
   @Dependency(\.defaultDatabase) var database
   @Environment(\.dismiss) private var dismiss
   @State private var name: String

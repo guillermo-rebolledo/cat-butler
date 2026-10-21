@@ -95,6 +95,16 @@ struct SeveralCatsTests {
     #expect(try database.read { try Cat.find(tofu.id).fetchOne($0) } == edited)
   }
 
+  @Test func editingACatKeepsATargetSetMeanwhile() throws {
+    var edited = tofu
+    edited.name = "Tofu Jr."
+    try database.write { try $0.overrideCalorieTarget(200, for: tofu.id) }
+    try database.write { try $0.updateCat(edited) }
+    let saved = try database.read { try Cat.find(tofu.id).fetchOne($0) }
+    #expect(saved?.name == "Tofu Jr.")
+    #expect(saved?.calorieTargetOverride == 200)
+  }
+
   /// A corrected birthdate isn't a birthday: a Kitten corrected to an Adult gets no turning-one notice, and an Adult
   /// corrected to a Kitten gets it when it turns one.
   @Test func correctingTheBirthdateResetsTheTurningOneNotice() throws {

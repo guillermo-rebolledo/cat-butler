@@ -12,7 +12,7 @@ final class SeveralCatsUITests: XCTestCase {
     app.tabBars.buttons["Cats"].tap()
     app.buttons["Add Cat"].tap()
     XCTAssertTrue(app.navigationBars["Add Cat"].waitForExistence(timeout: 5))
-    app.addFirstCat(named: "Tofu")
+    app.fillInCat(named: "Tofu")
     app.buttons["Save"].tap()
     XCTAssertTrue(app.catRow("Tofu").waitForExistence(timeout: 5))
     attachScreenshot("Cats", of: app)
@@ -51,17 +51,5 @@ final class SeveralCatsUITests: XCTestCase {
 
     app.tabBars.buttons["Today"].tap()
     XCTAssertTrue(app.staticTexts["Mochi"].waitForExistence(timeout: 5))
-  }
-}
-
-extension XCUIApplication {
-  /// Picks `cat` in the toolbar's Cat switcher.
-  @MainActor
-  func switchCat(to cat: String) {
-    // Labelled "Cat, " and the Cat shown.
-    navigationBars.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Cat, '")).firstMatch.tap()
-    let option = buttons[cat].firstMatch
-    XCTAssertTrue(option.waitForExistence(timeout: 5))
-    option.tap()
   }
 }

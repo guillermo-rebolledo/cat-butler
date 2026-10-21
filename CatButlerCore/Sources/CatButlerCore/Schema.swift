@@ -136,13 +136,20 @@ extension Database {
     return cat
   }
 
-  /// Saves an edited Cat. A corrected birthdate resets the turning-one notice as if the Cat were added now.
+  /// Saves what the Cat form edits: name, photo, birthdate and neutered. Only those, so a Calorie Target or dismissed
+  /// notice saved meanwhile stays. A corrected birthdate resets the turning-one notice as if the Cat were added now.
   public func updateCat(_ cat: Cat) throws {
     @Dependency(\.date.now) var now
     guard let old = try Cat.find(cat.id).fetchOne(self) else { throw NotFound() }
-    var cat = cat
-    if cat.birthdate != old.birthdate { cat.isTurningOneNoticeDone = cat.lifeStage(on: now) != .kitten }
-    try Cat.update(cat).execute(self)
+    let isTurningOneNoticeDone = cat.birthdate == old.birthdate ? nil : cat.lifeStage(on: now) != .kitten
+    try Cat.find(cat.id).update {
+      $0.name = cat.name
+      $0.photo = cat.photo
+      $0.birthdate = cat.birthdate
+      $0.isNeutered = cat.isNeutered
+      if let isTurningOneNoticeDone { $0.isTurningOneNoticeDone = isTurningOneNoticeDone }
+    }
+    .execute(self)
   }
 }
 

@@ -120,7 +120,7 @@ public struct FeedingDay: Equatable, Sendable {
 
   public init() {}
 
-  /// The Meal a Feeding given at `now` fulfils: the nearest one still to come whose window is open.
+  /// The current Meal, which a Feeding given at `now` fulfils: the nearest one not yet fed whose window is open.
   public func currentMeal(at now: Date) -> Meal? {
     meals.filter { $0.state == .upcoming && now >= $0.time.addingTimeInterval(-Meal.window) }
       .min { Swift.abs($0.time.timeIntervalSince(now)) < Swift.abs($1.time.timeIntervalSince(now)) }?.meal
