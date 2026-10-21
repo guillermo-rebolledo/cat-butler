@@ -363,7 +363,8 @@ struct CareReminderSettings: View {
         Stepper("^[\(timing.daysBefore) day](inflect: true) before", value: $timing.daysBefore, in: 1...30)
         DatePicker("Time", selection: time, displayedComponents: .hourAndMinute)
       } footer: {
-        Text("Each Care Task gets a reminder this many days before it's due, in time to book the vet, and one on the day. Overdue tasks get no more reminders.")
+        let time = time.wrappedValue.formatted(date: .omitted, time: .shortened)
+        Text("Each Care Task gets a reminder ^[\(timing.daysBefore) day](inflect: true) before it's due, in time to book the vet, and one on the day, both at \(time). Overdue tasks get no more.")
       }
     }
     .navigationTitle("Care Reminders")

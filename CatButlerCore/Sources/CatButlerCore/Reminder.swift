@@ -20,15 +20,17 @@ public enum Reminder: Equatable, Identifiable, Sendable {
     }
   }
 
+  /// How many days ahead, today included, the plan covers.
+  // ponytail: the plan only moves on when the app opens or Fed ✓ runs, so reminders stop if the app isn't opened for
+  // this long (less with many Meals, as iOS keeps 64); a background app refresh task would keep it going.
+  public static let days = 7
   /// iOS keeps at most this many pending notifications per app.
-  // ponytail: with many Meals the cut can drop a Care Reminder weeks ahead until the plan moves on, which takes the
-  // app being opened; see ``MealReminder/days``.
   public static let limit = 64
 }
 
 extension Database {
-  /// The reminder plan: Meal Reminders over the next ``MealReminder/days`` days and every Care Reminder to come,
-  /// soonest first, cut to the ``Reminder/limit`` iOS keeps.
+  /// The reminder plan: Meal and Care Reminders over the next ``Reminder/days`` days, soonest first, cut to the
+  /// ``Reminder/limit`` iOS keeps.
   public func reminders(careTiming: CareReminder.Timing) throws -> [Reminder] {
     let all = try mealReminders().map(Reminder.meal) + careReminders(timing: careTiming).map(Reminder.care)
     return Array(all.sorted { $0.date < $1.date }.prefix(Reminder.limit))

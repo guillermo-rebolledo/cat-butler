@@ -38,17 +38,38 @@ struct CareReminderTests {
   }
 
   @Test func aCareTaskGetsAReminderThreeDaysBeforeAndAt9OnItsDueDate() throws {
-    try addTask(due: "2026-11-02T00:00:00-05:00")
+    try addTask(due: "2026-10-24T00:00:00-04:00")
     #expect(try plan() == [
-      reminder(.advance, "2026-10-30T09:00:00-04:00"), reminder(.due, "2026-11-02T09:00:00-05:00"),
+      reminder(.advance, "2026-10-21T09:00:00-04:00"), reminder(.due, "2026-10-24T09:00:00-04:00"),
     ])
   }
 
+  /// Both stay at 09:00 across the end of daylight saving time on November 1.
+  @Test func remindersKeepTheirTimeOfDayAcrossADaylightSavingChange() throws {
+    try withDependencies { $0.date.now = instant("2026-10-28T12:00:00-04:00") } operation: {
+      try addTask(due: "2026-11-02T00:00:00-05:00")
+      let reminders = try plan()
+      #expect(reminders == [
+        reminder(.advance, "2026-10-30T09:00:00-04:00"), reminder(.due, "2026-11-02T09:00:00-05:00"),
+      ])
+    }
+  }
+
   @Test func settingsChangeBothTimings() throws {
-    try addTask(due: "2026-11-02T00:00:00-05:00")
-    #expect(try plan(CareReminder.Timing(daysBefore: 7, minuteOfDay: 18 * 60 + 30)) == [
-      reminder(.advance, "2026-10-26T18:30:00-04:00"), reminder(.due, "2026-11-02T18:30:00-05:00"),
+    try addTask(due: "2026-10-25T00:00:00-04:00")
+    #expect(try plan(CareReminder.Timing(daysBefore: 5, minuteOfDay: 18 * 60 + 30)) == [
+      reminder(.advance, "2026-10-20T18:30:00-04:00"), reminder(.due, "2026-10-25T18:30:00-04:00"),
     ])
+  }
+
+  /// Like Meal Reminders, a week ahead, today included; later ones join as the plan moves on.
+  @Test func thePlanCoversAWeekOfCareReminders() throws {
+    try addTask(due: "2026-10-28T00:00:00-04:00")
+    #expect(try plan() == [reminder(.advance, "2026-10-25T09:00:00-04:00")])
+    try withDependencies { $0.date.now = instant("2026-10-22T12:00:00-04:00") } operation: {
+      let later = try plan()
+      #expect(later == [reminder(.advance, "2026-10-25T09:00:00-04:00"), reminder(.due, "2026-10-28T09:00:00-04:00")])
+    }
   }
 
   /// Overdue from the day after its due date: the badge shows it, no notification does.
@@ -58,16 +79,50 @@ struct CareReminderTests {
     #expect(try plan() == [])
   }
 
-  /// Noon on the due date: 09:00 has passed, so none is left, even for a task added just now.
+  /// Noon on the due date: 09:00 has passed, so none is left. Added just now, it's in front of the owner on Today.
   @Test func aCareTaskDueTodayAfterItsReminderTimeGetsNoMore() throws {
     try addTask(due: "2026-10-19T00:00:00-04:00")
     #expect(try plan() == [])
   }
 
-  /// Within 3 days of its due date, only the due-date reminder is left.
-  @Test func aCareTaskDueInTwoDaysGetsOnlyItsDueDateReminder() throws {
+  /// Added 2 days ahead, after its advance reminder's time: that comes at the next reminder time instead, and only
+  /// once.
+  @Test func aCareTaskAddedLateGetsItsAdvanceReminderAtTheNextReminderTime() throws {
     try addTask(due: "2026-10-21T00:00:00-04:00")
+    #expect(try plan() == [reminder(.advance, "2026-10-20T09:00:00-04:00"), reminder(.due, "2026-10-21T09:00:00-04:00")])
+    try withDependencies { $0.date.now = instant("2026-10-20T10:00:00-04:00") } operation: {
+      let later = try plan()
+      #expect(later == [reminder(.due, "2026-10-21T09:00:00-04:00")])
+    }
+  }
+
+  /// Added the day before, the next reminder time is the due date's own.
+  @Test func aCareTaskAddedTheDayBeforeGetsOnlyItsDueDateReminder() throws {
+    try addTask(due: "2026-10-20T00:00:00-04:00")
+    #expect(try plan() == [reminder(.due, "2026-10-20T09:00:00-04:00")])
+  }
+
+  /// Added weeks ago, its advance reminder already came on the 18th.
+  @Test func aCareTaskSetEarlierGetsNoSecondAdvanceReminder() throws {
+    let task = try withDependencies { $0.date.now = instant("2026-10-01T12:00:00-04:00") } operation: {
+      try addTask(due: "2026-10-21T00:00:00-04:00")
+    }
     #expect(try plan() == [reminder(.due, "2026-10-21T09:00:00-04:00")])
+    // Renaming it doesn't change when it's due.
+    var renamed = task
+    renamed.title = "Rabies vaccine"
+    try database.write { try $0.updateCareTask(renamed) }
+    #expect(try plan() == [reminder(.due, "2026-10-21T09:00:00-04:00")])
+  }
+
+  /// Moved from December to the 21st, e.g. the vet's booster date: the advance reminder catches up.
+  @Test func aDueDateMovedCloserCountsAsSetNow() throws {
+    var task = try withDependencies { $0.date.now = instant("2026-10-01T12:00:00-04:00") } operation: {
+      try addTask(due: "2026-12-01T00:00:00-05:00")
+    }
+    task.dueDate = instant("2026-10-21T00:00:00-04:00")
+    try database.write { try $0.updateCareTask(task) }
+    #expect(try plan() == [reminder(.advance, "2026-10-20T09:00:00-04:00"), reminder(.due, "2026-10-21T09:00:00-04:00")])
   }
 
   @Test func aDoneOneOffCareTaskProducesNoReminders() throws {
@@ -80,9 +135,11 @@ struct CareReminderTests {
   @Test func aDoneRecurringCareTaskIsRemindedAtItsNextDueDate() throws {
     let task = try addTask("Deworming", due: "2026-10-22T00:00:00-04:00", interval: CareInterval(count: 3, unit: .month))
     try database.write { _ = try $0.addCareRecord(for: task.id, on: instant("2026-10-19T10:00:00-04:00"), notes: "", photo: nil) }
-    #expect(try plan() == [
-      reminder(.advance, "2027-01-16T09:00:00-05:00"), reminder(.due, "2027-01-19T09:00:00-05:00"),
-    ])
+    #expect(try plan() == [])
+    try withDependencies { $0.date.now = instant("2027-01-15T12:00:00-05:00") } operation: {
+      let later = try plan()
+      #expect(later == [reminder(.advance, "2027-01-16T09:00:00-05:00"), reminder(.due, "2027-01-19T09:00:00-05:00")])
+    }
   }
 
   /// Six Meals a day make 84 Meal Reminders over the week, more than iOS keeps, so the plan keeps the soonest 64,
@@ -98,9 +155,9 @@ struct CareReminderTests {
     let reminders = try database.read { try $0.reminders(careTiming: .default) }
     #expect(reminders.count == Reminder.limit)
     #expect(reminders.map(\.date) == reminders.map(\.date).sorted())
-    #expect(try plan() == [reminder(.due, "2026-10-21T09:00:00-04:00")])
-    // 8 left today, 12 a day on the 20th–23rd and the Flea treatment make 57; the 24th's first 7 end at 16:00.
-    #expect(reminders.last?.date == instant("2026-10-24T16:00:00-04:00"))
+    #expect(try plan() == [reminder(.advance, "2026-10-20T09:00:00-04:00"), reminder(.due, "2026-10-21T09:00:00-04:00")])
+    // 8 left today, 12 a day on the 20th–23rd and the Flea treatment's 2 make 58; the 24th's first 6 end at 13:30.
+    #expect(reminders.last?.date == instant("2026-10-24T13:30:00-04:00"))
   }
 
   /// Settings keeps the timing under one key.

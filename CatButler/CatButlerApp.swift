@@ -11,6 +11,8 @@ struct CatButlerApp: App {
         $0.context = .preview
         // Noon today, so Meal statuses don't depend on when the tests run.
         $0.date = .constant(Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date())!)
+        // Settings start fresh too.
+        UserDefaults.standard.removeObject(forKey: CareReminder.Timing.key)
       }
       $0.defaultDatabase = try! appDatabase()
     }

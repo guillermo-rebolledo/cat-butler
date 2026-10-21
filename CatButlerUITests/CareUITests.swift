@@ -77,6 +77,38 @@ final class CareUITests: XCTestCase {
   }
 
   @MainActor
+  func testSettingsChangeWhenCareRemindersCome() {
+    let app = XCUIApplication.launchedForTesting()
+    app.completeFirstRun()
+    app.tabBars.buttons["Settings"].tap()
+    app.buttons["Care Reminders"].tap()
+    XCTAssertTrue(app.navigationBars["Care Reminders"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.staticTexts["3 days before"].exists)
+    XCTAssertTrue(app.containing("a reminder 3 days before it's due").exists)
+    // iOS puts a narrow no-break space before AM and PM.
+    XCTAssertTrue(app.containing("both at 9:00").exists)
+
+    app.steppers.buttons["Increment"].tap()
+    XCTAssertTrue(app.staticTexts["4 days before"].waitForExistence(timeout: 5))
+    app.datePickers.firstMatch.tap()
+    let hour = app.pickerWheels.element(boundBy: 0)
+    XCTAssertTrue(hour.waitForExistence(timeout: 5))
+    hour.adjust(toPickerWheelValue: "6")
+    app.pickerWheels.element(boundBy: 2).adjust(toPickerWheelValue: "PM")
+    app.buttons["PopoverDismissRegion"].tap()
+    XCTAssertTrue(app.containing("a reminder 4 days before it's due").waitForExistence(timeout: 5))
+    XCTAssertTrue(app.containing("both at 6:00").exists)
+    XCTAssertTrue(app.containing("PM. Overdue").exists)
+    attachScreenshot("Care Reminder settings", of: app)
+
+    // Kept after leaving the screen.
+    app.navigationBars.buttons["Settings"].tap()
+    app.buttons["Care Reminders"].tap()
+    XCTAssertTrue(app.staticTexts["4 days before"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.containing("both at 6:00").exists)
+  }
+
+  @MainActor
   func testACareRecordCanBeCorrectedOrDeletedOnItsOwn() {
     let app = XCUIApplication.launchedForTesting()
     app.completeFirstRun()
