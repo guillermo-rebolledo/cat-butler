@@ -41,11 +41,10 @@ final class FeedingsUITests: XCTestCase {
   }
 
   @MainActor
-  func testTheScheduleCanBeEditedFromSettings() {
+  func testTheScheduleCanBeEditedFromTheCatsTab() {
     let app = XCUIApplication.launchedForTesting()
     app.completeFirstRun()
-    app.tabBars.buttons["Settings"].tap()
-    app.buttons["Meals"].tap()
+    app.openMeals(of: "Miso")
     XCTAssertTrue(app.navigationBars["Meals"].waitForExistence(timeout: 5))
     app.buttons["Remove Meal"].firstMatch.tap()
     app.buttons["Save"].tap()
@@ -72,8 +71,7 @@ final class FeedingsUITests: XCTestCase {
     app.buttons["Save"].tap()
     XCTAssertTrue(app.staticTexts["Kibble"].waitForExistence(timeout: 5))
 
-    app.navigationBars.buttons.firstMatch.tap()
-    app.buttons["Meals"].tap()
+    app.openMeals(of: "Miso")
     app.buttons["Food, Tuna pâté"].firstMatch.tap()
     XCTAssertTrue(app.buttons["Tuna pâté"].waitForExistence(timeout: 5))
     XCTAssertFalse(app.buttons["Kibble"].exists)

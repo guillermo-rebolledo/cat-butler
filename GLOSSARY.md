@@ -40,6 +40,10 @@ _Avoid_: Skipped meal, late meal
 A notification about a Meal, with a Fed ✓ action that logs the Meal's usual Feeding: one at the Meal's time, and one follow-up 30 minutes later unless the Meal was fulfilled by then.
 _Avoid_: Alert, alarm
 
+**Feed All**:
+One action that logs a Feeding for every Cat with a Meal due now, each with that Cat's Meal's usual Food and amount; when two of a Cat's Meals are open, the nearer one. Cats with no Meal due now get none.
+_Avoid_: Bulk feed, feed everyone
+
 **Food**:
 A specific product or food a Cat eats, with its serving unit (can, pouch, gram, cup) and calories per unit; a Food may be marked as a treat or as free-fed.
 _Avoid_: Product, brand, item

@@ -10,13 +10,13 @@ extension XCUIApplication {
     return app
   }
 
-  /// First-run step 1: Miso, 9 lb.
+  /// First-run step 1, or Cats → Add Cat: a Kitten, 9 lb.
   @MainActor
-  func addFirstCat() {
+  func addFirstCat(named catName: String = "Miso") {
     let name = textFields["Name"]
     XCTAssertTrue(name.waitForExistence(timeout: 5))
     name.tap()
-    name.typeText("Miso")
+    name.typeText(catName)
     let weight = textFields["Weight"]
     weight.tap()
     weight.typeText("9")
@@ -139,6 +139,22 @@ extension XCUIApplication {
   func dismissPopover() {
     // At the top, over the title: a tap in the middle can land on a button under the popover, such as Delete.
     buttons["PopoverDismissRegion"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()
+  }
+
+  /// The Cat's row on the Cats tab, labelled with its photo, name, Life Stage and weight.
+  @MainActor
+  func catRow(_ cat: String) -> XCUIElement {
+    buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Cat photo, \(cat),")).firstMatch
+  }
+
+  /// Cats → the Cat → Meals.
+  @MainActor
+  func openMeals(of cat: String) {
+    tabBars.buttons["Cats"].tap()
+    catRow(cat).tap()
+    XCTAssertTrue(navigationBars["Edit Cat"].waitForExistence(timeout: 5))
+    buttons["Meals"].tap()
+    XCTAssertTrue(navigationBars["Meals"].waitForExistence(timeout: 5))
   }
 
   @MainActor

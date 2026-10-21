@@ -135,6 +135,15 @@ extension Database {
     try recordWeighIn(weight, for: cat.id, on: now)
     return cat
   }
+
+  /// Saves an edited Cat. A corrected birthdate resets the turning-one notice as if the Cat were added now.
+  public func updateCat(_ cat: Cat) throws {
+    @Dependency(\.date.now) var now
+    guard let old = try Cat.find(cat.id).fetchOne(self) else { throw NotFound() }
+    var cat = cat
+    if cat.birthdate != old.birthdate { cat.isTurningOneNoticeDone = cat.lifeStage(on: now) != .kitten }
+    try Cat.update(cat).execute(self)
+  }
 }
 
 public func appDatabase() throws -> any DatabaseWriter {
