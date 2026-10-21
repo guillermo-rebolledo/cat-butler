@@ -62,13 +62,13 @@ struct CareReminderTests {
     ])
   }
 
-  /// Like Meal Reminders, a week ahead, today included; later ones join as the plan moves on.
-  @Test func thePlanCoversAWeekOfCareReminders() throws {
-    try addTask(due: "2026-10-28T00:00:00-04:00")
-    #expect(try plan() == [reminder(.advance, "2026-10-25T09:00:00-04:00")])
+  /// 30 days ahead, today included, until the 17th of November; later ones join as the plan moves on.
+  @Test func thePlanCoversAMonthOfCareReminders() throws {
+    try addTask(due: "2026-11-20T00:00:00-05:00")
+    #expect(try plan() == [reminder(.advance, "2026-11-17T09:00:00-05:00")])
     try withDependencies { $0.date.now = instant("2026-10-22T12:00:00-04:00") } operation: {
       let later = try plan()
-      #expect(later == [reminder(.advance, "2026-10-25T09:00:00-04:00"), reminder(.due, "2026-10-28T09:00:00-04:00")])
+      #expect(later == [reminder(.advance, "2026-11-17T09:00:00-05:00"), reminder(.due, "2026-11-20T09:00:00-05:00")])
     }
   }
 
@@ -108,11 +108,22 @@ struct CareReminderTests {
       try addTask(due: "2026-10-21T00:00:00-04:00")
     }
     #expect(try plan() == [reminder(.due, "2026-10-21T09:00:00-04:00")])
-    // Renaming it doesn't change when it's due.
+    // Renaming it, or picking a time on the same day, doesn't change the day it's due.
     var renamed = task
     renamed.title = "Rabies vaccine"
+    renamed.dueDate = instant("2026-10-21T15:00:00-04:00")
     try database.write { try $0.updateCareTask(renamed) }
     #expect(try plan() == [reminder(.due, "2026-10-21T09:00:00-04:00")])
+  }
+
+  /// Set weeks ago, due on the 25th: its advance reminder was coming on the 22nd. Moved to 7 days before today, the
+  /// 18th has passed, so it comes at the next reminder time instead of not at all.
+  @Test func aLongerTimingCatchesUpInsteadOfDroppingTheAdvanceReminder() throws {
+    try withDependencies { $0.date.now = instant("2026-10-01T12:00:00-04:00") } operation: {
+      try addTask(due: "2026-10-25T00:00:00-04:00")
+    }
+    let timing = CareReminder.Timing(daysBefore: 7, minuteOfDay: 9 * 60, lengthenedAt: instant("2026-10-19T11:00:00-04:00"))
+    #expect(try plan(timing) == [reminder(.advance, "2026-10-20T09:00:00-04:00"), reminder(.due, "2026-10-25T09:00:00-04:00")])
   }
 
   /// Moved from December to the 21st, e.g. the vet's booster date: the advance reminder catches up.
@@ -142,15 +153,16 @@ struct CareReminderTests {
     }
   }
 
-  /// Six Meals a day make 84 Meal Reminders over the week, more than iOS keeps, so the plan keeps the soonest 64,
-  /// Care Reminders among them.
+  /// Six Meals a day make 84 Meal Reminders over the week, more than iOS keeps, so the plan keeps the soonest 64:
+  /// the Flea treatment's Care Reminders, but not the Checkup's.
   @Test func thePlanNeverExceeds64AndKeepsTheSoonest() throws {
     @Dependency(\.uuid) var uuid
     let pate = try database.write { try $0.addFood(name: "Tuna pâté", servingUnit: .can, kcalPerUnit: 80, isTreat: false, isFreeFed: false) }
     let meals = [7, 10, 13, 16, 19, 22].map { Meal(id: uuid(), catID: cat.id, minuteOfDay: $0 * 60, foodID: pate.id, amount: 0.5) }
     try database.write { try $0.saveMeals(meals, for: cat.id) }
     try addTask("Flea treatment", due: "2026-10-21T00:00:00-04:00")
-    try addTask(due: "2027-06-01T00:00:00-04:00")
+    // Inside the window, but past the cut.
+    try addTask("Checkup", due: "2026-11-10T00:00:00-05:00")
 
     let reminders = try database.read { try $0.reminders(careTiming: .default) }
     #expect(reminders.count == Reminder.limit)
@@ -165,6 +177,11 @@ struct CareReminderTests {
     let timing = CareReminder.Timing(daysBefore: 7, minuteOfDay: 18 * 60 + 30)
     #expect(timing.rawValue == "7 1110")
     #expect(CareReminder.Timing(rawValue: "7 1110") == timing)
+    let changed = CareReminder.Timing(daysBefore: 7, minuteOfDay: 18 * 60 + 30, lengthenedAt: instant("2026-10-19T11:00:00-04:00"))
+    #expect(changed.rawValue == "7 1110 1792422000.0")
+    #expect(CareReminder.Timing(rawValue: "7 1110 1792422000.0") == changed)
     #expect(CareReminder.Timing(rawValue: "") == nil)
+    #expect(CareReminder.Timing(rawValue: "3.5 540") == nil)
+    #expect(CareReminder.Timing(rawValue: "3 540 soon") == nil)
   }
 }

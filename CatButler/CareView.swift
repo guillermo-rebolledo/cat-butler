@@ -360,7 +360,7 @@ struct CareReminderSettings: View {
   var body: some View {
     Form {
       Section {
-        Stepper("^[\(timing.daysBefore) day](inflect: true) before", value: $timing.daysBefore, in: 1...30)
+        Stepper("^[\(timing.daysBefore) day](inflect: true) before", value: daysBefore, in: 1...30)
         DatePicker("Time", selection: time, displayedComponents: .hourAndMinute)
       } footer: {
         let time = time.wrappedValue.formatted(date: .omitted, time: .shortened)
@@ -375,6 +375,16 @@ struct CareReminderSettings: View {
       calendar.date(atMinuteOfDay: timing.minuteOfDay, on: now)
     } set: {
       timing.minuteOfDay = calendar.minuteOfDay(of: $0)
+    }
+  }
+
+  /// Notes when it grows, so an advance reminder it moves into the past still comes.
+  private var daysBefore: Binding<Int> {
+    Binding {
+      timing.daysBefore
+    } set: {
+      if $0 > timing.daysBefore { timing.lengthenedAt = now }
+      timing.daysBefore = $0
     }
   }
 }

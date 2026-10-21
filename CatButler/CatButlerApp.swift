@@ -5,14 +5,15 @@ import SwiftUI
 @main
 struct CatButlerApp: App {
   init() {
+    let isUITesting = ProcessInfo.processInfo.arguments.contains("-ui-testing")
+    // Settings start fresh in UI tests too.
+    if isUITesting { UserDefaults.standard.removeObject(forKey: CareReminder.Timing.key) }
     prepareDependencies {
       // UI tests get a fresh temporary database on every launch.
-      if ProcessInfo.processInfo.arguments.contains("-ui-testing") {
+      if isUITesting {
         $0.context = .preview
         // Noon today, so Meal statuses don't depend on when the tests run.
         $0.date = .constant(Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date())!)
-        // Settings start fresh too.
-        UserDefaults.standard.removeObject(forKey: CareReminder.Timing.key)
       }
       $0.defaultDatabase = try! appDatabase()
     }

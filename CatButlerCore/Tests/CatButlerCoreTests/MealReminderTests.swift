@@ -93,7 +93,7 @@ struct MealReminderTests {
   @Test func thePlanCoversAWeek() throws {
     try save(meal(at: 18 * 60))
     let reminders = try database.read { try $0.mealReminders() }
-    #expect(reminders.count == 2 * Reminder.days)
+    #expect(reminders.count == 2 * MealReminder.days)
     #expect(reminders.last?.date == instant("2026-10-25T18:30:00-04:00"))
   }
 

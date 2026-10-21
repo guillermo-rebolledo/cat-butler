@@ -23,10 +23,14 @@ public struct MealReminder: Equatable, Identifiable, Sendable {
 
   /// A follow-up comes this long after its Meal, unless the Meal was fulfilled by then.
   public static let followUpDelay: TimeInterval = 30 * 60
+  /// How many days ahead, today included, the plan covers.
+  // ponytail: the plan only moves on when the app opens or Fed ✓ runs, so reminders stop if the app isn't opened for
+  // this long (less with many Meals, as iOS keeps 64); a background app refresh task would keep it going.
+  public static let days = 7
 }
 
 extension Database {
-  /// The plan's Meal Reminders: every one still to come, soonest first, over the next ``Reminder/days`` days.
+  /// The plan's Meal Reminders: every one still to come, soonest first, over the next ``MealReminder/days`` days.
   /// Meals already fulfilled, and Meals of free-fed Foods, get none.
   public func mealReminders() throws -> [MealReminder] {
     @Dependency(\.calendar) var calendar
@@ -40,7 +44,7 @@ extension Database {
     for meal in try Meal.all.fetchAll(self) {
       guard let cat = cats[meal.catID], let food = foods[meal.foodID], !food.isFreeFed else { continue }
       // From yesterday: last night's late Meal can still have its follow-up to come after midnight.
-      for offset in -1..<Reminder.days {
+      for offset in -1..<MealReminder.days {
         let time = meal.time(on: calendar.date(byAdding: .day, value: offset, to: now)!, calendar: calendar)
         guard !feedings.contains(where: { $0.fulfils(meal, at: time) }) else { continue }
         for (kind, date) in [(MealReminder.Kind.due, time), (.followUp, time.addingTimeInterval(MealReminder.followUpDelay))]

@@ -95,7 +95,7 @@ final class CareUITests: XCTestCase {
     XCTAssertTrue(hour.waitForExistence(timeout: 5))
     hour.adjust(toPickerWheelValue: "6")
     app.pickerWheels.element(boundBy: 2).adjust(toPickerWheelValue: "PM")
-    app.buttons["PopoverDismissRegion"].tap()
+    app.dismissPopover()
     XCTAssertTrue(app.containing("a reminder 4 days before it's due").waitForExistence(timeout: 5))
     XCTAssertTrue(app.containing("both at 6:00").exists)
     XCTAssertTrue(app.containing("PM. Overdue").exists)
