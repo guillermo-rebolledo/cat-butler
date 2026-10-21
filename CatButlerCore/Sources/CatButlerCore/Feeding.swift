@@ -37,12 +37,9 @@ public nonisolated struct Meal: Hashable, Identifiable, Sendable {
     }
   }
 
-  /// This Meal on the local day containing `day`. On a daylight saving day a time that doesn't exist moves forward.
+  /// This Meal on the local day containing `day`.
   public func time(on day: Date, calendar: Calendar) -> Date {
-    calendar.date(
-      bySettingHour: minuteOfDay / 60, minute: minuteOfDay % 60, second: 0, of: day,
-      matchingPolicy: .nextTime, repeatedTimePolicy: .first, direction: .forward
-    )!
+    calendar.date(atMinuteOfDay: minuteOfDay, on: day)
   }
 
   /// This Meal on whichever day puts it closest to `date`.
@@ -50,6 +47,23 @@ public nonisolated struct Meal: Hashable, Identifiable, Sendable {
     [-1, 0, 1].compactMap { calendar.date(byAdding: .day, value: $0, to: date) }
       .map { time(on: $0, calendar: calendar) }
       .min { Swift.abs($0.timeIntervalSince(date)) < Swift.abs($1.timeIntervalSince(date)) }!
+  }
+}
+
+extension Calendar {
+  /// `minuteOfDay` minutes after midnight on the local day containing `day`. On a daylight saving day a time that
+  /// doesn't exist moves forward.
+  public func date(atMinuteOfDay minuteOfDay: Int, on day: Date) -> Date {
+    date(
+      bySettingHour: minuteOfDay / 60, minute: minuteOfDay % 60, second: 0, of: day,
+      matchingPolicy: .nextTime, repeatedTimePolicy: .first, direction: .forward
+    )!
+  }
+
+  /// Minutes after midnight of `date`'s local time, e.g. one picked in a DatePicker.
+  public func minuteOfDay(of date: Date) -> Int {
+    let parts = dateComponents([.hour, .minute], from: date)
+    return (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
   }
 }
 

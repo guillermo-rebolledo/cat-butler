@@ -37,6 +37,9 @@ public nonisolated struct CareTask: Hashable, Identifiable, Sendable {
   public var dueDate: Date
   public var repeatCount: Int?
   public var repeatUnit: CareInterval.Unit?
+  /// When the due date was last set: added, changed by hand or moved on by a Care Record. Reminders whose time had
+  /// passed by then never went out.
+  public var dueDateSetAt: Date?
 
   /// Nil for a one-off task.
   public var interval: CareInterval? {
@@ -113,7 +116,8 @@ extension Database {
   @discardableResult
   public func addCareTask(for catID: Cat.ID, title: String, dueDate: Date, interval: CareInterval?) throws -> CareTask {
     @Dependency(\.uuid) var uuid
-    var task = CareTask(id: uuid(), catID: catID, title: title, dueDate: dueDate)
+    @Dependency(\.date.now) var now
+    var task = CareTask(id: uuid(), catID: catID, title: title, dueDate: dueDate, dueDateSetAt: now)
     task.interval = interval
     guard CareTask.isValid(title: task.title, interval: task.interval) else { throw InvalidCareTask() }
     try CareTask.insert { task }.execute(self)
@@ -123,6 +127,16 @@ extension Database {
   /// Saves a changed title, repeat or due date, e.g. the booster date from the vet card.
   public func updateCareTask(_ task: CareTask) throws {
     guard CareTask.isValid(title: task.title, interval: task.interval) else { throw InvalidCareTask() }
+    guard let old = try CareTask.find(task.id).fetchOne(self) else { throw NotFound() }
+    try saveCareTask(task, was: old)
+  }
+
+  /// Saves the task, noting when its due date moved to another day.
+  private func saveCareTask(_ task: CareTask, was old: CareTask) throws {
+    @Dependency(\.calendar) var calendar
+    @Dependency(\.date.now) var now
+    var task = task
+    task.dueDateSetAt = calendar.isDate(task.dueDate, inSameDayAs: old.dueDate) ? old.dueDateSetAt : now
     try CareTask.update(task).execute(self)
   }
 
@@ -162,11 +176,12 @@ extension Database {
     let latest = try latestCareRecordDate(of: old.careTaskID)
     try CareRecord.find(id).delete().execute(self)
     try followLatestCareRecord(of: old.careTaskID, from: latest)
-    guard try latestCareRecordDate(of: old.careTaskID) == nil, var task = try CareTask.find(old.careTaskID).fetchOne(self),
+    guard try latestCareRecordDate(of: old.careTaskID) == nil, let task = try CareTask.find(old.careTaskID).fetchOne(self),
       let interval = task.interval, task.dueDate == interval.date(after: old.date, calendar: calendar)
     else { return }
-    task.dueDate = old.date
-    try CareTask.update(task).execute(self)
+    var moved = task
+    moved.dueDate = old.date
+    try saveCareTask(moved, was: task)
   }
 
   private func latestCareRecordDate(of taskID: CareTask.ID) throws -> Date? {
@@ -177,11 +192,12 @@ extension Database {
   /// corrected before the latest, e.g. the shelter's dose, is history only and leaves a hand-set due date alone.
   private func followLatestCareRecord(of taskID: CareTask.ID, from before: Date?) throws {
     @Dependency(\.calendar) var calendar
-    guard var task = try CareTask.find(taskID).fetchOne(self), let interval = task.interval,
+    guard let task = try CareTask.find(taskID).fetchOne(self), let interval = task.interval,
       let latest = try latestCareRecordDate(of: taskID), latest != before
     else { return }
-    task.dueDate = interval.date(after: latest, calendar: calendar)
-    try CareTask.update(task).execute(self)
+    var moved = task
+    moved.dueDate = interval.date(after: latest, calendar: calendar)
+    try saveCareTask(moved, was: task)
   }
 
   /// The Cat's Care Tasks, soonest due first, as of today on the device's local calendar.

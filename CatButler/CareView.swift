@@ -350,3 +350,41 @@ extension CareInterval {
     }
   }
 }
+
+/// Settings → Care Reminders: when a Care Task's two reminders fire.
+struct CareReminderSettings: View {
+  @AppStorage(CareReminder.Timing.key) private var timing = CareReminder.Timing.default
+  @Dependency(\.calendar) var calendar
+  @Dependency(\.date.now) var now
+
+  var body: some View {
+    Form {
+      Section {
+        Stepper("^[\(timing.daysBefore) day](inflect: true) before", value: daysBefore, in: 1...30)
+        DatePicker("Time", selection: time, displayedComponents: .hourAndMinute)
+      } footer: {
+        let time = time.wrappedValue.formatted(date: .omitted, time: .shortened)
+        Text("Each Care Task gets a reminder ^[\(timing.daysBefore) day](inflect: true) before it's due, in time to book the vet, and one on the day, both at \(time). Overdue tasks get no more.")
+      }
+    }
+    .navigationTitle("Care Reminders")
+  }
+
+  private var time: Binding<Date> {
+    Binding {
+      calendar.date(atMinuteOfDay: timing.minuteOfDay, on: now)
+    } set: {
+      timing.minuteOfDay = calendar.minuteOfDay(of: $0)
+    }
+  }
+
+  /// Notes when it grows, so an advance reminder it moves into the past still comes.
+  private var daysBefore: Binding<Int> {
+    Binding {
+      timing.daysBefore
+    } set: {
+      if $0 > timing.daysBefore { timing.lengthenedAt = now }
+      timing.daysBefore = $0
+    }
+  }
+}

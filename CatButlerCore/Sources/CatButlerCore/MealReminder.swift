@@ -30,7 +30,7 @@ public struct MealReminder: Equatable, Identifiable, Sendable {
 }
 
 extension Database {
-  /// The reminder plan: every reminder still to come, soonest first, over the next ``MealReminder/days`` days.
+  /// The plan's Meal Reminders: every one still to come, soonest first, over the next ``MealReminder/days`` days.
   /// Meals already fulfilled, and Meals of free-fed Foods, get none.
   public func mealReminders() throws -> [MealReminder] {
     @Dependency(\.calendar) var calendar

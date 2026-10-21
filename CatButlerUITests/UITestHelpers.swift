@@ -132,6 +132,11 @@ extension XCUIApplication {
     let day = buttons.matching(NSPredicate(format: "label ENDSWITH %@", "\(month) 15")).firstMatch
     XCTAssertTrue(day.waitForExistence(timeout: 5))
     day.tap()
+    dismissPopover()
+  }
+
+  @MainActor
+  func dismissPopover() {
     // At the top, over the title: a tap in the middle can land on a button under the popover, such as Delete.
     buttons["PopoverDismissRegion"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()
   }

@@ -276,6 +276,10 @@ public func appDatabase() throws -> any DatabaseWriter {
     try #sql(#"CREATE INDEX "idx_careTasks_catID" ON "careTasks"("catID")"#).execute(db)
     try #sql(#"CREATE INDEX "idx_careRecords_careTaskID" ON "careRecords"("careTaskID")"#).execute(db)
   }
+  // Nullable, so a Care Task synced from an older build still fits; it just gets no late advance reminder.
+  migrator.registerMigration("Add when care tasks' due dates were set") { db in
+    try #sql(#"ALTER TABLE "careTasks" ADD COLUMN "dueDateSetAt" TEXT"#).execute(db)
+  }
   try migrator.migrate(database)
   return database
 }

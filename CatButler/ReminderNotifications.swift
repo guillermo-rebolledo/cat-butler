@@ -3,14 +3,12 @@ import SQLiteData
 import UserNotifications
 
 /// Keeps iOS's pending notifications in line with the core's reminder plan, and logs a Feeding on "Fed ✓".
-final class MealNotifications: NSObject, UNUserNotificationCenterDelegate, Sendable {
-  static let shared = MealNotifications()
+final class ReminderNotifications: NSObject, UNUserNotificationCenterDelegate, Sendable {
+  static let shared = ReminderNotifications()
   private static let category = "meal"
   private static let fedAction = "fed"
   private static let mealIDKey = "mealID"
   private static let mealTimeKey = "mealTime"
-  /// iOS keeps at most this many pending notifications per app.
-  private static let limit = 64
 
   /// At launch, before the app finishes launching, so "Fed ✓" reaches us when it launches the app in the background.
   func start() {
@@ -32,17 +30,18 @@ final class MealNotifications: NSObject, UNUserNotificationCenterDelegate, Senda
     _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
   }
 
-  /// Replaces every pending notification with the plan's. On the main actor, so two syncs can't interleave.
+  /// Replaces every pending notification with the plan's, which the core already cut to what iOS keeps. On the main
+  /// actor, so two syncs can't interleave.
   // ponytail: replaces all of them on each change; diff against the pending ones if that ever shows up as churn.
-  @MainActor func schedule(_ plan: [MealReminder]) {
+  @MainActor func schedule(_ plan: [Reminder]) {
     let center = UNUserNotificationCenter.current()
     center.removeAllPendingNotificationRequests()
-    for reminder in plan.prefix(Self.limit) {
+    for reminder in plan {
       center.add(request(for: reminder), withCompletionHandler: nil)
     }
   }
 
-  /// Opening the app shows where every Meal stands, so reminders already on screen go.
+  /// Opening the app shows where every Meal and Care Task stands, so reminders already on screen go.
   func clearDelivered() {
     UNUserNotificationCenter.current().removeAllDeliveredNotifications()
   }
@@ -50,10 +49,24 @@ final class MealNotifications: NSObject, UNUserNotificationCenterDelegate, Senda
   /// Rereads the plan, for when no screen is watching the database: "Fed ✓" in the background.
   @MainActor func reschedule() {
     @Dependency(\.defaultDatabase) var database
-    withErrorReporting { schedule(try database.read { try $0.mealReminders() }) }
+    withErrorReporting { schedule(try database.read { try $0.reminders(careTiming: .saved) }) }
   }
 
-  private func request(for reminder: MealReminder) -> UNNotificationRequest {
+  private func request(for reminder: Reminder) -> UNNotificationRequest {
+    let content =
+      switch reminder {
+      case .meal(let reminder): content(for: reminder)
+      case .care(let reminder): content(for: reminder)
+      }
+    content.sound = .default
+    @Dependency(\.calendar) var calendar
+    let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: reminder.date)
+    return UNNotificationRequest(
+      identifier: reminder.id, content: content, trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
+    )
+  }
+
+  private func content(for reminder: MealReminder) -> UNMutableNotificationContent {
     let content = UNMutableNotificationContent()
     let amount = reminder.food.amountText(reminder.meal.amount)
     switch reminder.kind {
@@ -65,14 +78,23 @@ final class MealNotifications: NSObject, UNUserNotificationCenterDelegate, Senda
       let time = reminder.mealTime.formatted(date: .omitted, time: .shortened)
       content.body = String(localized: "The \(time) Meal isn't logged yet: \(amount).")
     }
-    content.sound = .default
     content.categoryIdentifier = Self.category
     content.userInfo = [Self.mealIDKey: reminder.meal.id.uuidString, Self.mealTimeKey: reminder.mealTime.timeIntervalSince1970]
-    @Dependency(\.calendar) var calendar
-    let components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: reminder.date)
-    return UNNotificationRequest(
-      identifier: reminder.id, content: content, trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-    )
+    return content
+  }
+
+  private func content(for reminder: CareReminder) -> UNMutableNotificationContent {
+    let content = UNMutableNotificationContent()
+    switch reminder.kind {
+    case .advance:
+      content.title = String(localized: "\(reminder.catName)'s \(reminder.task.title) is due soon")
+      let due = reminder.task.dueDate.formatted(.dateTime.weekday(.wide).month().day())
+      content.body = String(localized: "Due \(due). Time to book the vet if it needs one.")
+    case .due:
+      content.title = String(localized: "\(reminder.catName)'s \(reminder.task.title) is due today")
+      content.body = String(localized: "Mark it done in Care once it's done.")
+    }
+    return content
   }
 
   func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
@@ -93,5 +115,15 @@ final class MealNotifications: NSObject, UNUserNotificationCenterDelegate, Senda
     -> UNNotificationPresentationOptions
   {
     [.banner, .list, .sound]
+  }
+}
+
+extension CareReminder.Timing {
+  /// Where Settings → Care Reminders keeps it.
+  static let key = "careReminderTiming"
+
+  /// What Settings → Care Reminders has, for when no screen is watching: "Fed ✓" in the background.
+  static var saved: Self {
+    UserDefaults.standard.string(forKey: key).flatMap(Self.init(rawValue:)) ?? .default
   }
 }
