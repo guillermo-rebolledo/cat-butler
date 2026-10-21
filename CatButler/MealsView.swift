@@ -120,8 +120,7 @@ extension Meal {
     }
     set {
       @Dependency(\.calendar) var calendar
-      let parts = calendar.dateComponents([.hour, .minute], from: newValue)
-      minuteOfDay = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+      minuteOfDay = calendar.minuteOfDay(of: newValue)
     }
   }
 

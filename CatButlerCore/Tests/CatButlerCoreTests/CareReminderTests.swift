@@ -58,7 +58,7 @@ struct CareReminderTests {
     #expect(try plan() == [])
   }
 
-  /// Noon on the due date: 09:00 has passed, so it's already been reminded.
+  /// Noon on the due date: 09:00 has passed, so none is left, even for a task added just now.
   @Test func aCareTaskDueTodayAfterItsReminderTimeGetsNoMore() throws {
     try addTask(due: "2026-10-19T00:00:00-04:00")
     #expect(try plan() == [])
@@ -101,5 +101,13 @@ struct CareReminderTests {
     #expect(try plan() == [reminder(.due, "2026-10-21T09:00:00-04:00")])
     // 8 left today, 12 a day on the 20th–23rd and the Flea treatment make 57; the 24th's first 7 end at 16:00.
     #expect(reminders.last?.date == instant("2026-10-24T16:00:00-04:00"))
+  }
+
+  /// Settings keeps the timing under one key.
+  @Test func aTimingSurvivesBeingStored() {
+    let timing = CareReminder.Timing(daysBefore: 7, minuteOfDay: 18 * 60 + 30)
+    #expect(timing.rawValue == "7 1110")
+    #expect(CareReminder.Timing(rawValue: "7 1110") == timing)
+    #expect(CareReminder.Timing(rawValue: "") == nil)
   }
 }

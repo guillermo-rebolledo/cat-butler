@@ -34,8 +34,20 @@ public struct CareReminder: Equatable, Identifiable, Sendable {
   public var id: String { "care-\(kind.rawValue)-\(task.id)-\(Int(date.timeIntervalSince1970))" }
 }
 
+/// Stored as "3 540", so Settings can keep it under one key.
+extension CareReminder.Timing: RawRepresentable {
+  public init?(rawValue: String) {
+    let parts = rawValue.split(separator: " ").compactMap { Int($0) }
+    guard parts.count == 2 else { return nil }
+    self.init(daysBefore: parts[0], minuteOfDay: parts[1])
+  }
+
+  public var rawValue: String { "\(daysBefore) \(minuteOfDay)" }
+}
+
 extension Database {
-  /// Every Care Reminder still to come. Overdue tasks and done one-off tasks get none.
+  /// Every Care Reminder still to come, however far ahead: Care Tasks are few and months apart, and the plan's cut
+  /// keeps the soonest. Overdue tasks and done one-off tasks get none.
   func careReminders(timing: CareReminder.Timing) throws -> [CareReminder] {
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
@@ -46,11 +58,7 @@ extension Database {
       guard let cat = cats[task.catID], task.interval != nil || !recorded.contains(task.id) else { continue }
       let advanceDay = calendar.date(byAdding: .day, value: -timing.daysBefore, to: task.dueDate)!
       for (kind, day) in [(CareReminder.Kind.advance, advanceDay), (.due, task.dueDate)] {
-        // On a daylight saving day a time that doesn't exist moves forward, as for Meals.
-        let date = calendar.date(
-          bySettingHour: timing.minuteOfDay / 60, minute: timing.minuteOfDay % 60, second: 0, of: day,
-          matchingPolicy: .nextTime, repeatedTimePolicy: .first, direction: .forward
-        )!
+        let date = calendar.date(atMinuteOfDay: timing.minuteOfDay, on: day)
         guard date > now else { continue }
         reminders.append(CareReminder(kind: kind, date: date, task: task, catName: cat.name))
       }

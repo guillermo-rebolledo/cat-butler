@@ -71,7 +71,7 @@ The dated record of a Care Task being done, with any notes from the vet.
 _Avoid_: Vet visit, history entry, completion
 
 **Care Reminder**:
-A notification about a Care Task in time to book the vet: one 3 days before its due date and one on the day, at 09:00 unless changed in Settings. An overdue Care Task gets none, only its badge.
+A notification about a Care Task in time to book the vet: by default one 3 days before its due date and one on the day, both at 09:00; Settings changes the days and the time. An overdue Care Task gets none, only its badge.
 _Avoid_: Alert, vet reminder
 
 **Weigh-in**:

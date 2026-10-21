@@ -21,6 +21,8 @@ public enum Reminder: Equatable, Identifiable, Sendable {
   }
 
   /// iOS keeps at most this many pending notifications per app.
+  // ponytail: with many Meals the cut can drop a Care Reminder weeks ahead until the plan moves on, which takes the
+  // app being opened; see ``MealReminder/days``.
   public static let limit = 64
 }
 

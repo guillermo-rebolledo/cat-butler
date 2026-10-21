@@ -117,3 +117,13 @@ final class ReminderNotifications: NSObject, UNUserNotificationCenterDelegate, S
     [.banner, .list, .sound]
   }
 }
+
+extension CareReminder.Timing {
+  /// Where Settings → Care Reminders keeps it.
+  static let key = "careReminderTiming"
+
+  /// What Settings → Care Reminders has, for when no screen is watching: "Fed ✓" in the background.
+  static var saved: Self {
+    UserDefaults.standard.string(forKey: key).flatMap(Self.init(rawValue:)) ?? .default
+  }
+}

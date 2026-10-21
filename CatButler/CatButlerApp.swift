@@ -27,8 +27,7 @@ struct RootView: View {
   @FetchAll var foods: [Food]
   @FetchAll var meals: [Meal]
   @Fetch var reminders: [Reminder] = []
-  @AppStorage(CareReminder.Timing.daysBeforeKey) private var careDaysBefore = CareReminder.Timing.default.daysBefore
-  @AppStorage(CareReminder.Timing.minuteOfDayKey) private var careMinuteOfDay = CareReminder.Timing.default.minuteOfDay
+  @AppStorage(CareReminder.Timing.key) private var careTiming = CareReminder.Timing.default
   @Environment(\.scenePhase) private var scenePhase
   @Dependency(\.date.now) var now
 
@@ -46,10 +45,6 @@ struct RootView: View {
       // A changed timing in Settings → Care Reminders.
       .onChange(of: careTiming) { Task { await loadReminders() } }
       .onChange(of: reminders) { ReminderNotifications.shared.schedule(reminders) }
-  }
-
-  private var careTiming: CareReminder.Timing {
-    CareReminder.Timing(daysBefore: careDaysBefore, minuteOfDay: careMinuteOfDay)
   }
 
   private func loadReminders() async {
