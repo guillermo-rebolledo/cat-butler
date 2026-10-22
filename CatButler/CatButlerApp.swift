@@ -26,7 +26,9 @@ struct CatButlerApp: App {
 }
 
 struct RootView: View {
+  /// Archived Cats too: with every Cat archived, first run doesn't start over and their history stays on the Cats tab.
   @FetchAll(Cat.order(by: \.name)) var cats
+  @FetchAll(Cat.inCare) var catsInCare
   @FetchAll var foods: [Food]
   @FetchAll var meals: [Meal]
   @Fetch var reminders: [Reminder] = []
@@ -62,7 +64,7 @@ struct RootView: View {
     } else if foods.isEmpty {
       // First-run step 2: the Food.
       NavigationStack { FoodEditor() }
-    } else if meals.isEmpty, let cat = cats.first {
+    } else if meals.isEmpty, let cat = catsInCare.first {
       // First-run step 3: the Meals.
       NavigationStack { MealScheduleEditor(cat: cat, isFirstRun: true) }
     } else {

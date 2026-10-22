@@ -11,7 +11,7 @@ One animal cared for in the app; every plan, record and reminder belongs to exac
 _Avoid_: Pet, animal, kitty
 
 **Archived Cat**:
-A Cat no longer in the Household's care (rehomed or passed away); its history is kept and its reminders stop.
+A Cat no longer in the Household's care (rehomed or passed away): it leaves Today, Care and Feed All and gets no reminders, while its history stays readable from the Cats tab. It can be unarchived. Deleting a Cat instead removes everything recorded about it.
 _Avoid_: Deleted cat, inactive cat
 
 **Household**:

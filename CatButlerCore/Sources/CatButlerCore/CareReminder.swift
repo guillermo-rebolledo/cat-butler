@@ -71,7 +71,7 @@ extension Database {
   func careReminders(timing: CareReminder.Timing) throws -> [CareReminder] {
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
-    let cats = Dictionary(uniqueKeysWithValues: try Cat.all.fetchAll(self).map { ($0.id, $0) })
+    let cats = Dictionary(uniqueKeysWithValues: try Cat.inCare.fetchAll(self).map { ($0.id, $0) })
     let end = calendar.date(byAdding: .day, value: CareReminder.days, to: calendar.startOfDay(for: now))!
     let recorded = Set(try CareRecord.select(\.careTaskID).fetchAll(self))
     var reminders: [CareReminder] = []
