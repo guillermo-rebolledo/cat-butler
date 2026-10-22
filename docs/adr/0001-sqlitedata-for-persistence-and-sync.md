@@ -12,6 +12,4 @@ Store data in SQLite through Point-Free's SQLiteData, not SwiftData. Households 
 
 We depend on a third-party library. The data model is designed around CloudKit sharing: the owner shares a record or zone, and each member has to accept the invite.
 
-## Syncing a new table
-
-Sync covers only the tables listed in `bootstrapDatabase()` in `CatButlerCore/Sources/CatButlerCore/Schema.swift`, so every new table must be added there in the same change that creates it. `SyncTests` fails until it is: give it a row of the new table. A new table or column also has to follow SQLiteData's rules for synced schemas (UUID primary keys, no uniqueness constraints, nullable or defaulted new columns), because older builds on the owner's other devices still sync with it.
+Sync covers only the tables listed in `bootstrapDatabase()` (`CatButlerCore/Sources/CatButlerCore/Schema.swift`), so every new table must be added there in the same change that creates it; `SyncTests` fails until it is. New tables and columns also follow SQLiteData's rules for synced schemas (UUID primary keys, no uniqueness constraints, new columns nullable or defaulted), since older builds on the owner's other devices keep syncing with them.

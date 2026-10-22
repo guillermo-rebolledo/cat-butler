@@ -3,6 +3,11 @@ options:
   bundleIdPrefix: dev.rebolledo
   deploymentTarget:
     iOS: "26.0"
+settings:
+  base:
+    # The paid Apple Developer team, which iCloud needs.
+    DEVELOPMENT_TEAM: X76BWPRADX
+    CODE_SIGN_STYLE: Automatic
 packages:
   CatButlerCore:
     path: CatButlerCore
@@ -15,7 +20,7 @@ targets:
       - package: CatButlerCore
     entitlements:
       path: CatButler/CatButler.entitlements
-      # iCloud sync to the owner's private CloudKit database. Signing needs a paid Apple Developer team.
+      # iCloud sync to the owner's private CloudKit database.
       properties:
         aps-environment: development
         com.apple.developer.icloud-container-identifiers: [iCloud.dev.rebolledo.CatButler]

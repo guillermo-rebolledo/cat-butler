@@ -189,16 +189,16 @@ extension DependencyValues {
   }
 }
 
+/// The app database alone, without the sync engine `bootstrapDatabase` adds; tests that don't sync use it.
 public func appDatabase() throws -> any DatabaseWriter {
   var configuration = Configuration()
   configuration.foreignKeysEnabled = true
   // So every connection can read what the sync engine records about each row.
   configuration.prepareDatabase { try $0.attachMetadatabase() }
   let database = try defaultDatabase(configuration: configuration)
+  // Never erase on a schema change: the sync metadata would survive it, so the erased rows wouldn't come back from
+  // iCloud. Change the schema with a new migration instead.
   var migrator = DatabaseMigrator()
-  #if DEBUG
-    migrator.eraseDatabaseOnSchemaChange = true
-  #endif
   migrator.registerMigration("Create households, cats and weigh-ins") { db in
     try #sql(
       """
