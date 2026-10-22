@@ -39,17 +39,3 @@ final class HealthNotesUITests: XCTestCase {
     XCTAssertFalse(app.containing("Vomited after breakfast").waitForExistence(timeout: 2))
   }
 }
-
-extension XCUIApplication {
-  /// Fills in and saves the open Health Note editor, dated the 15th `monthsAgo` months back, or now when nil.
-  @MainActor
-  func fillInHealthNote(_ text: String, monthsAgo: Int? = nil) {
-    XCTAssertTrue(navigationBars["Add Health Note"].waitForExistence(timeout: 5))
-    let field = textFields["What did you notice?"]
-    field.tap()
-    field.typeText(text)
-    if let monthsAgo { pickDay15(monthsAgo: monthsAgo) }
-    // The Cat's screen behind the sheet has a Save too.
-    navigationBars["Add Health Note"].buttons["Save"].tap()
-  }
-}

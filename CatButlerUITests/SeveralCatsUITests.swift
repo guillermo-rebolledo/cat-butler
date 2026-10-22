@@ -81,6 +81,8 @@ final class SeveralCatsUITests: XCTestCase {
     XCTAssertFalse(app.buttons["Feed All"].exists)
 
     app.tabBars.buttons["Cats"].tap()
+    // Below the history rows, so the Form builds it only once scrolled to.
+    app.swipeUp()
     app.buttons["Delete Cat"].tap()
     app.buttons["Delete Tofu and Their History"].tap()
     XCTAssertTrue(app.catRow("Miso").waitForExistence(timeout: 5))

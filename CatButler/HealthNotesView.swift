@@ -12,7 +12,7 @@ struct HealthNotesView: View {
 
   init(cat: Cat) {
     self.cat = cat
-    _notes = FetchAll(HealthNote.list(for: cat.id))
+    _notes = FetchAll(HealthNote.history(for: cat.id))
   }
 
   var body: some View {
@@ -71,21 +71,19 @@ struct HealthNoteEditor: View {
     .navigationTitle(note == nil ? "Add Health Note" : "Edit Health Note")
     .toolbar {
       ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
-      ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(trimmed.isEmpty) }
+      ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(text.allSatisfy(\.isWhitespace)) }
     }
   }
-
-  private var trimmed: String { text.trimmingCharacters(in: .whitespacesAndNewlines) }
 
   private func save() {
     let saved = withErrorReporting {
       try database.write { db in
         if var note {
-          note.text = trimmed
+          note.text = text
           note.date = date
           try db.updateHealthNote(note)
         } else {
-          try db.addHealthNote(for: catID, on: date, text: trimmed)
+          try db.addHealthNote(for: catID, on: date, text: text)
         }
       }
       return true

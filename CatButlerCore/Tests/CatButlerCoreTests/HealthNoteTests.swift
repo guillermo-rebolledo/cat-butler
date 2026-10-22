@@ -28,7 +28,7 @@ struct HealthNoteTests {
   }
 
   func notes(of cat: Cat) throws -> [String] {
-    try database.read { try HealthNote.list(for: cat.id).fetchAll($0) }.map(\.text)
+    try database.read { try HealthNote.history(for: cat.id).fetchAll($0) }.map(\.text)
   }
 
   @Test func eachCatListsItsOwnHealthNotesNewestFirst() throws {
@@ -57,6 +57,18 @@ struct HealthNoteTests {
 
     try database.write { try $0.deleteHealthNote(note.id) }
     #expect(try notes(of: miso) == ["Limping"])
+  }
+
+  @Test(arguments: ["", "  \n "])
+  func aHealthNoteMustSaySomething(text: String) throws {
+    #expect(throws: InvalidHealthNote.self) {
+      try database.write { try $0.addHealthNote(for: miso.id, on: instant("2026-10-19T09:00:00-04:00"), text: text) }
+    }
+    var note = try database.write { try $0.addHealthNote(for: miso.id, on: instant("2026-10-19T09:00:00-04:00"), text: " Vomited\n") }
+    #expect(note.text == "Vomited")
+    note.text = text
+    #expect(throws: InvalidHealthNote.self) { try database.write { try $0.updateHealthNote(note) } }
+    #expect(try notes(of: miso) == ["Vomited"])
   }
 
   @Test func deletingACatDeletesItsHealthNotes() throws {
