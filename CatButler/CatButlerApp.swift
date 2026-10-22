@@ -33,6 +33,8 @@ struct RootView: View {
   @AppStorage(CareReminder.Timing.key) private var careTiming = CareReminder.Timing.default
   @Environment(\.scenePhase) private var scenePhase
   @Dependency(\.date.now) var now
+  /// The Cat Today and Care show, shared so switching on one switches both.
+  @State private var catID: Cat.ID?
 
   var body: some View {
     content
@@ -56,7 +58,7 @@ struct RootView: View {
 
   @ViewBuilder private var content: some View {
     if cats.isEmpty {
-      FirstRunView()
+      NavigationStack { CatEditor(isFirstRun: true) }
     } else if foods.isEmpty {
       // First-run step 2: the Food.
       NavigationStack { FoodEditor() }
@@ -65,14 +67,12 @@ struct RootView: View {
       NavigationStack { MealScheduleEditor(cat: cat, isFirstRun: true) }
     } else {
       TabView {
-        Tab("Today", systemImage: "sun.max") { TodayView() }
-        Tab("Cats", systemImage: "cat") { Text("Cats") }
-        Tab("Care", systemImage: "cross.case") { CareView() }
+        Tab("Today", systemImage: "sun.max") { TodayView(catID: $catID) }
+        Tab("Cats", systemImage: "cat") { CatsView() }
+        Tab("Care", systemImage: "cross.case") { CareView(catID: $catID) }
         Tab("Settings", systemImage: "gear") {
           NavigationStack {
             List {
-              // ponytail: the first Cat's Meals only, like Today; per-Cat settings come with multi-Cat support.
-              if let cat = cats.first { NavigationLink("Meals") { MealScheduleEditor(cat: cat) } }
               NavigationLink("Foods") { FoodsView() }
               NavigationLink("Care Reminders") { CareReminderSettings() }
             }

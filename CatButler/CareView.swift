@@ -5,15 +5,16 @@ import SwiftUI
 
 /// The Care tab: the Cat's Care Tasks, soonest due first, then its Care Record history.
 struct CareView: View {
-  // ponytail: the first Cat only, like Today; Cat switching comes with multi-Cat support.
-  @FetchOne(Cat.order(by: \.name)) var cat: Cat?
+  @Binding var catID: Cat.ID?
+  @FetchAll(Cat.order(by: \.name)) var cats
 
   var body: some View {
     NavigationStack {
       Group {
-        if let cat { CareList(cat: cat) } else { List {} }
+        if let cat = cats.selected(catID) { CareList(cat: cat).id(cat.id) } else { List {} }
       }
       .navigationTitle("Care")
+      .toolbar { CatSwitcher(cats: cats, catID: $catID) }
     }
   }
 }

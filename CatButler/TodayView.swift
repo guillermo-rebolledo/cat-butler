@@ -3,16 +3,47 @@ import SQLiteData
 import SwiftUI
 
 struct TodayView: View {
-  // ponytail: shows the first Cat only; Cat switching comes with multi-Cat support.
-  @FetchOne(Cat.order(by: \.name)) var cat: Cat?
+  @Binding var catID: Cat.ID?
+  @FetchAll(Cat.order(by: \.name)) var cats
+  /// The Meals Feed All logs, one per Cat.
+  @Fetch private var currentMeals: [Meal] = []
+  @Dependency(\.defaultDatabase) var database
+  @Dependency(\.date.now) var now
 
   var body: some View {
     NavigationStack {
       Group {
-        if let cat { FeedingsToday(cat: cat) } else { List {} }
+        // A new Cat starts fresh, rather than with the last one's view state.
+        if let cat = cats.selected(catID) { FeedingsToday(cat: cat).id(cat.id) } else { List {} }
       }
       .navigationTitle("Today")
+      .toolbar {
+        CatSwitcher(cats: cats, catID: $catID)
+        ToolbarItem(placement: .primaryAction) {
+          if cats.count > 1 { Button("Feed All", action: feedAll).disabled(currentMeals.isEmpty) }
+        }
+      }
+      .task {
+        // Every minute, as Meals' windows open and close.
+        while !Task.isCancelled {
+          await withErrorReporting { try await $currentMeals.load(CurrentMealsRequest(refreshedAt: now)) }
+          try? await Task.sleep(for: .seconds(60))
+        }
+      }
     }
+  }
+
+  private func feedAll() {
+    withErrorReporting { try database.write { try $0.feedAll() } }
+  }
+}
+
+private struct CurrentMealsRequest: FetchKeyRequest {
+  /// Only here so each minute's reload is a new request.
+  let refreshedAt: Date
+
+  func fetch(_ db: Database) throws -> [Meal] {
+    try db.currentMeals()
   }
 }
 
@@ -87,6 +118,7 @@ struct FeedingsToday: View {
 
   private var meals: some View {
     Section("Meals") {
+      if day.meals.isEmpty { Text("No Meals yet. Add them in Cats → \(cat.name) → Meals.").foregroundStyle(.secondary) }
       ForEach(day.meals) { status in
         HStack {
           VStack(alignment: .leading) {

@@ -119,6 +119,12 @@ public struct FeedingDay: Equatable, Sendable {
   public var intake = Intake()
 
   public init() {}
+
+  /// The current Meal, which a Feeding given at `now` fulfils: the nearest one not yet fed whose window is open.
+  public func currentMeal(at now: Date) -> Meal? {
+    meals.filter { $0.state == .upcoming && now >= $0.time.addingTimeInterval(-Meal.window) }
+      .min { Swift.abs($0.time.timeIntervalSince(now)) < Swift.abs($1.time.timeIntervalSince(now)) }?.meal
+  }
 }
 
 extension Database {
@@ -156,6 +162,19 @@ extension Database {
     try Feeding.insert { feeding }.execute(self)
     try relinkFeedings(of: catID, from: date)
     return try Feeding.find(feeding.id).fetchOne(self) ?? feeding
+  }
+
+  /// Each Cat's current Meal, for Feed All. Cats with none get no entry.
+  public func currentMeals() throws -> [Meal] {
+    @Dependency(\.date.now) var now
+    return try Cat.order(by: \.name).select(\.id).fetchAll(self).compactMap { try feedingDay(for: $0).currentMeal(at: now) }
+  }
+
+  /// Feed All: logs one Feeding now for each Cat with a current Meal, with that Meal's Food and amount.
+  @discardableResult
+  public func feedAll() throws -> [Feeding] {
+    @Dependency(\.date.now) var now
+    return try currentMeals().map { try logFeeding(catID: $0.catID, foodID: $0.foodID, amount: $0.amount, at: now) }
   }
 
   /// Saves a changed Food, amount, time or eaten fraction. Calories are recalculated only when the Food or amount changed.

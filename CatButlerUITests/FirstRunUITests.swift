@@ -6,7 +6,7 @@ final class FirstRunUITests: XCTestCase {
     let app = XCUIApplication.launchedForTesting()
     attachScreenshot("First run", of: app)
 
-    app.addFirstCat()
+    app.fillInCat()
     attachScreenshot("First run filled in", of: app)
     app.buttons["Continue"].tap()
 
