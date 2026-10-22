@@ -26,6 +26,7 @@ struct SyncTests {
       try db.logFeeding(catID: cat.id, foodID: food.id, amount: 1, at: now)
       let task = try db.addCareTask(for: cat.id, title: "Rabies vaccine", dueDate: now, interval: nil)
       try db.addCareRecord(for: task.id, on: now, notes: "", photo: nil)
+      try db.addHealthNote(for: cat.id, on: now, text: "Vomited after breakfast")
     }
 
     let (tables, syncedTables) = try database.read { db in
