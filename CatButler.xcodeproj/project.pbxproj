@@ -53,6 +53,7 @@
 		9788CD2B5706A217385400A5 /* CareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareView.swift; sourceTree = "<group>"; };
 		99469767F0BB102C3EB24CF1 /* CatButlerUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = CatButlerUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A8D7D938696815359D8BD07 /* CatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatsView.swift; sourceTree = "<group>"; };
+		A06A10397DC3114A18060611 /* CatButler.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CatButler.entitlements; sourceTree = "<group>"; };
 		AAE256923D3095CC8EAAAEE8 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		B6224B82986FF4D0CC5BF122 /* FoodsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoodsView.swift; sourceTree = "<group>"; };
 		B68CD34CC63986958BF63EE9 /* WeighInUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeighInUITests.swift; sourceTree = "<group>"; };
@@ -106,6 +107,7 @@
 			children = (
 				0E5C0E8D3EDEFA0EA1428CF6 /* CaloriesView.swift */,
 				9788CD2B5706A217385400A5 /* CareView.swift */,
+				A06A10397DC3114A18060611 /* CatButler.entitlements */,
 				6B6179BB57FAA950B1A240A7 /* CatButlerApp.swift */,
 				9A8D7D938696815359D8BD07 /* CatsView.swift */,
 				B6224B82986FF4D0CC5BF122 /* FoodsView.swift */,
@@ -258,10 +260,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = CatButler/CatButler.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -432,10 +436,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = CatButler/CatButler.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIBackgroundModes = "remote-notification";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

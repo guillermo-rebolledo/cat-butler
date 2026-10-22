@@ -177,9 +177,23 @@ extension Database {
   }
 }
 
+extension DependencyValues {
+  /// The app database, synced to the owner's private iCloud database. Every table must be listed here, or it
+  /// stays on one device; `SyncTests` fails until it is.
+  public mutating func bootstrapDatabase() throws {
+    defaultDatabase = try appDatabase()
+    defaultSyncEngine = try SyncEngine(
+      for: defaultDatabase,
+      tables: Household.self, Cat.self, WeighIn.self, Food.self, Meal.self, Feeding.self, CareTask.self, CareRecord.self
+    )
+  }
+}
+
 public func appDatabase() throws -> any DatabaseWriter {
   var configuration = Configuration()
   configuration.foreignKeysEnabled = true
+  // So every connection can read what the sync engine records about each row.
+  configuration.prepareDatabase { try $0.attachMetadatabase() }
   let database = try defaultDatabase(configuration: configuration)
   var migrator = DatabaseMigrator()
   #if DEBUG

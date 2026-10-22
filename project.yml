@@ -13,8 +13,17 @@ targets:
     sources: [CatButler]
     dependencies:
       - package: CatButlerCore
+    entitlements:
+      path: CatButler/CatButler.entitlements
+      # iCloud sync to the owner's private CloudKit database. Signing needs a paid Apple Developer team.
+      properties:
+        aps-environment: development
+        com.apple.developer.icloud-container-identifiers: [iCloud.dev.rebolledo.CatButler]
+        com.apple.developer.icloud-services: [CloudKit]
     settings:
       base:
+        # Remote notifications, so iCloud changes from the owner's other devices arrive in the background.
+        INFOPLIST_KEY_UIBackgroundModes: remote-notification
         SWIFT_VERSION: "6.0"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
