@@ -15,7 +15,7 @@ struct CatButlerApp: App {
         // Noon today, so Meal statuses don't depend on when the tests run.
         $0.date = .constant(Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date())!)
       }
-      $0.defaultDatabase = try! appDatabase()
+      try! $0.bootstrapDatabase()
     }
     ReminderNotifications.shared.start()
   }
