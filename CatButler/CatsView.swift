@@ -73,6 +73,7 @@ struct CatEditor: View {
   @State private var isNeutered: Bool
   @State private var weight: Double?
   @State private var isConfirmingDelete = false
+  @State private var isAddingHealthNote = false
   private let weightUnit = UnitMass.catWeight()
 
   init(cat: Cat? = nil, isFirstRun: Bool = false) {
@@ -115,6 +116,8 @@ struct CatEditor: View {
           } else {
             NavigationLink("Meals") { MealScheduleEditor(cat: cat) }
           }
+          NavigationLink("Health Notes") { HealthNotesView(cat: cat) }
+          Button("Add Health Note") { isAddingHealthNote = true }
         }
         Section {
           Button(cat.isArchived ? "Unarchive Cat" : "Archive Cat") { toggleArchived(cat) }
@@ -122,7 +125,7 @@ struct CatEditor: View {
             .confirmationDialog("Delete \(cat.name)?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
               Button("Delete \(cat.name) and Their History", role: .destructive) { delete(cat) }
             } message: {
-              Text("Their Meals, Feedings, Weigh-ins, Care Tasks and Care Records are deleted too. Archive instead to keep them.")
+              Text("Their Meals, Feedings, Weigh-ins, Care Tasks, Care Records and Health Notes are deleted too. Archive instead to keep them.")
             }
         } footer: {
           if !cat.isArchived {
@@ -141,6 +144,9 @@ struct CatEditor: View {
         }
         ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(!canSave) }
       }
+    }
+    .sheet(isPresented: $isAddingHealthNote) {
+      if let cat { NavigationStack { HealthNoteEditor(catID: cat.id) } }
     }
     .task(id: photoItem) {
       guard let data = try? await photoItem?.loadTransferable(type: Data.self) else { return }

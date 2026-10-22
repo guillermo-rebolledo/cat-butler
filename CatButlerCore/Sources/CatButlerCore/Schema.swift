@@ -184,7 +184,8 @@ extension DependencyValues {
     defaultDatabase = try appDatabase()
     defaultSyncEngine = try SyncEngine(
       for: defaultDatabase,
-      tables: Household.self, Cat.self, WeighIn.self, Food.self, Meal.self, Feeding.self, CareTask.self, CareRecord.self
+      tables: Household.self, Cat.self, WeighIn.self, Food.self, Meal.self, Feeding.self, CareTask.self, CareRecord.self,
+      HealthNote.self
     )
   }
 }
@@ -337,6 +338,20 @@ public func appDatabase() throws -> any DatabaseWriter {
   // ON CONFLICT REPLACE, so a Cat synced from an older build is still in care.
   migrator.registerMigration("Add archived cats") { db in
     try #sql(#"ALTER TABLE "cats" ADD COLUMN "isArchived" INTEGER NOT NULL ON CONFLICT REPLACE DEFAULT 0"#).execute(db)
+  }
+  migrator.registerMigration("Create health notes") { db in
+    try #sql(
+      """
+      CREATE TABLE "healthNotes" (
+        "id" TEXT PRIMARY KEY NOT NULL ON CONFLICT REPLACE DEFAULT (uuid()),
+        "catID" TEXT NOT NULL REFERENCES "cats"("id") ON DELETE CASCADE,
+        "date" TEXT NOT NULL,
+        "text" TEXT NOT NULL ON CONFLICT REPLACE DEFAULT ''
+      ) STRICT
+      """
+    )
+    .execute(db)
+    try #sql(#"CREATE INDEX "idx_healthNotes_catID" ON "healthNotes"("catID")"#).execute(db)
   }
   try migrator.migrate(database)
   return database
