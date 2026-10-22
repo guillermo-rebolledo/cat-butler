@@ -6,12 +6,12 @@ import SwiftUI
 /// The Care tab: the Cat's Care Tasks, soonest due first, then its Care Record history.
 struct CareView: View {
   @Binding var catID: Cat.ID?
-  @FetchAll(Cat.order(by: \.name)) var cats
+  @FetchAll(Cat.inCare) var cats
 
   var body: some View {
     NavigationStack {
       Group {
-        if let cat = cats.selected(catID) { CareList(cat: cat).id(cat.id) } else { List {} }
+        if let cat = cats.selected(catID) { CareList(cat: cat).id(cat.id) } else { NoCatsInCare() }
       }
       .navigationTitle("Care")
       .toolbar { CatSwitcher(cats: cats, catID: $catID) }
@@ -19,7 +19,8 @@ struct CareView: View {
   }
 }
 
-private struct CareList: View {
+/// The Cat's Care Tasks and Care Record history, on the Care tab or, for an Archived Cat, from the Cats tab.
+struct CareList: View {
   let cat: Cat
   @Dependency(\.date.now) var now
   @Fetch private var tasks: [CareTaskStatus] = []

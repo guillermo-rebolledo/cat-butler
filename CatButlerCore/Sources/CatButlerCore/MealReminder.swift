@@ -35,7 +35,7 @@ extension Database {
   public func mealReminders() throws -> [MealReminder] {
     @Dependency(\.calendar) var calendar
     @Dependency(\.date.now) var now
-    let cats = Dictionary(uniqueKeysWithValues: try Cat.all.fetchAll(self).map { ($0.id, $0) })
+    let cats = Dictionary(uniqueKeysWithValues: try Cat.inCare.fetchAll(self).map { ($0.id, $0) })
     let foods = Dictionary(uniqueKeysWithValues: try Food.all.fetchAll(self).map { ($0.id, $0) })
     // The earliest Meal with a reminder left is a follow-up away; Feedings before its window can't fulfil it.
     let earliest = now.addingTimeInterval(-MealReminder.followUpDelay - Meal.window)

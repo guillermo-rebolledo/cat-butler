@@ -3,20 +3,33 @@ import PhotosUI
 import SQLiteData
 import SwiftUI
 
-/// The Cats tab: every Cat, to add another or edit one and its Meals.
+/// The Cats tab: every Cat, to add another or edit one and its Meals, then the Archived Cats.
 struct CatsView: View {
-  @FetchAll(Cat.order(by: \.name)) var cats
+  @FetchAll(Cat.inCare) var cats
+  @FetchAll(Cat.archived) var archived
   @State private var isAdding = false
 
   var body: some View {
     NavigationStack {
-      List(cats) { cat in
-        NavigationLink { CatEditor(cat: cat) } label: { CatSummary(cat: cat) }
+      List {
+        ForEach(cats, content: row)
+        if !archived.isEmpty { Section("Archived") { ForEach(archived, content: row) } }
       }
       .navigationTitle("Cats")
       .toolbar { Button("Add Cat", systemImage: "plus") { isAdding = true } }
       .sheet(isPresented: $isAdding) { NavigationStack { CatEditor() } }
     }
+  }
+
+  private func row(_ cat: Cat) -> some View {
+    NavigationLink { CatEditor(cat: cat) } label: { CatSummary(cat: cat) }
+  }
+}
+
+/// Today and Care once every Cat is archived.
+struct NoCatsInCare: View {
+  var body: some View {
+    ContentUnavailableView("No Cats in Care", systemImage: "cat", description: Text("Add a Cat, or unarchive one, in Cats."))
   }
 }
 
@@ -59,6 +72,7 @@ struct CatEditor: View {
   @State private var ageMonths = 3
   @State private var isNeutered: Bool
   @State private var weight: Double?
+  @State private var isConfirmingDelete = false
   private let weightUnit = UnitMass.catWeight()
 
   init(cat: Cat? = nil, isFirstRun: Bool = false) {
@@ -94,7 +108,27 @@ struct CatEditor: View {
         if cat == nil { NumberField("Weight", value: $weight, unit: weightUnit.symbol) }
       }
       if let cat {
-        Section { NavigationLink("Meals") { MealScheduleEditor(cat: cat) } }
+        Section {
+          if cat.isArchived {
+            NavigationLink("Weight Chart") { WeightView(cat: cat) }
+            NavigationLink("Care") { CareList(cat: cat).navigationTitle("\(cat.name)'s Care") }
+          } else {
+            NavigationLink("Meals") { MealScheduleEditor(cat: cat) }
+          }
+        }
+        Section {
+          Button(cat.isArchived ? "Unarchive Cat" : "Archive Cat") { toggleArchived(cat) }
+          Button("Delete Cat", role: .destructive) { isConfirmingDelete = true }
+            .confirmationDialog("Delete \(cat.name)?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
+              Button("Delete \(cat.name) and Their History", role: .destructive) { delete(cat) }
+            } message: {
+              Text("Their Meals, Feedings, Weigh-ins, Care Tasks and Care Records are deleted too. Archive instead to keep them.")
+            }
+        } footer: {
+          if !cat.isArchived {
+            Text("For a Cat rehomed or passed away. An Archived Cat leaves Today and gets no reminders; its history stays here.")
+          }
+        }
       }
     }
     .navigationTitle(isFirstRun ? "Your Cat" : cat == nil ? "Add Cat" : "Edit Cat")
@@ -112,6 +146,22 @@ struct CatEditor: View {
       guard let data = try? await photoItem?.loadTransferable(type: Data.self) else { return }
       photo = downscaled(data)
     }
+  }
+
+  private func toggleArchived(_ cat: Cat) {
+    let archived = withErrorReporting {
+      try database.write { cat.isArchived ? try $0.unarchiveCat(cat.id) : try $0.archiveCat(cat.id) }
+      return true
+    }
+    if archived == true { dismiss() }
+  }
+
+  private func delete(_ cat: Cat) {
+    let deleted = withErrorReporting {
+      try database.write { try $0.deleteCat(cat.id) }
+      return true
+    }
+    if deleted == true { dismiss() }
   }
 
   private var canSave: Bool {

@@ -4,7 +4,7 @@ import SwiftUI
 
 struct TodayView: View {
   @Binding var catID: Cat.ID?
-  @FetchAll(Cat.order(by: \.name)) var cats
+  @FetchAll(Cat.inCare) var cats
   /// The Meals Feed All logs, one per Cat.
   @Fetch private var currentMeals: [Meal] = []
   @Dependency(\.defaultDatabase) var database
@@ -14,7 +14,7 @@ struct TodayView: View {
     NavigationStack {
       Group {
         // A new Cat starts fresh, rather than with the last one's view state.
-        if let cat = cats.selected(catID) { FeedingsToday(cat: cat).id(cat.id) } else { List {} }
+        if let cat = cats.selected(catID) { FeedingsToday(cat: cat).id(cat.id) } else { NoCatsInCare() }
       }
       .navigationTitle("Today")
       .toolbar {

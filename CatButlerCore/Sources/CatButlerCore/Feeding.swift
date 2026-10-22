@@ -164,10 +164,10 @@ extension Database {
     return try Feeding.find(feeding.id).fetchOne(self) ?? feeding
   }
 
-  /// Each Cat's current Meal, for Feed All. Cats with none get no entry.
+  /// Each Cat's current Meal, for Feed All. Cats with none, and Archived Cats, get no entry.
   public func currentMeals() throws -> [Meal] {
     @Dependency(\.date.now) var now
-    return try Cat.order(by: \.name).select(\.id).fetchAll(self).compactMap { try feedingDay(for: $0).currentMeal(at: now) }
+    return try Cat.inCare.select(\.id).fetchAll(self).compactMap { try feedingDay(for: $0).currentMeal(at: now) }
   }
 
   /// Feed All: logs one Feeding now for each Cat with a current Meal, with that Meal's Food and amount.

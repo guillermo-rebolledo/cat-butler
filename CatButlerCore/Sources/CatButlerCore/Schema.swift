@@ -20,6 +20,8 @@ public nonisolated struct Cat: Hashable, Identifiable, Sendable {
   public var calorieTargetOverride: Double?
   /// The owner dismissed the Kitten → Adult notice, or never needed it: the Cat was added already grown.
   public var isTurningOneNoticeDone: Bool
+  /// No longer in the Household's care: it leaves Today, Care and Feed All and gets no reminders; its history stays.
+  public var isArchived: Bool
 
   public func lifeStage(on date: Date) -> LifeStage {
     @Dependency(\.calendar) var calendar
@@ -32,6 +34,12 @@ public nonisolated struct Cat: Hashable, Identifiable, Sendable {
     @Dependency(\.date.now) var now
     return calendar.date(byAdding: .month, value: -months, to: now) ?? now
   }
+}
+
+extension Cat {
+  /// Cats still in the Household's care.
+  public static let inCare = Cat.where { !$0.isArchived }.order(by: \.name)
+  public static let archived = Cat.where(\.isArchived).order(by: \.name)
 }
 
 /// One recorded measurement of a Cat's weight. Always stored in kilograms.
@@ -129,7 +137,8 @@ extension Database {
       birthdate: birthdate,
       isNeutered: isNeutered,
       calorieTargetOverride: nil,
-      isTurningOneNoticeDone: LifeStage(birthdate: birthdate, on: now, calendar: calendar) != .kitten
+      isTurningOneNoticeDone: LifeStage(birthdate: birthdate, on: now, calendar: calendar) != .kitten,
+      isArchived: false
     )
     try Cat.insert { cat }.execute(self)
     try recordWeighIn(weight, for: cat.id, on: now)
@@ -150,6 +159,21 @@ extension Database {
       if let isTurningOneNoticeDone { $0.isTurningOneNoticeDone = isTurningOneNoticeDone }
     }
     .execute(self)
+  }
+
+  /// Takes the Cat out of care: no reminders, and off Today, Care and Feed All. Its history stays.
+  public func archiveCat(_ id: Cat.ID) throws {
+    try Cat.find(id).update { $0.isArchived = true }.execute(self)
+  }
+
+  /// Brings an Archived Cat back into care, reminders and all.
+  public func unarchiveCat(_ id: Cat.ID) throws {
+    try Cat.find(id).update { $0.isArchived = false }.execute(self)
+  }
+
+  /// Deletes the Cat and, by cascade, everything recorded about it.
+  public func deleteCat(_ id: Cat.ID) throws {
+    try Cat.find(id).delete().execute(self)
   }
 }
 
@@ -295,6 +319,10 @@ public func appDatabase() throws -> any DatabaseWriter {
   // Nullable, so a Care Task synced from an older build still fits; it just gets no late advance reminder.
   migrator.registerMigration("Add when care tasks' due dates were set") { db in
     try #sql(#"ALTER TABLE "careTasks" ADD COLUMN "dueDateSetAt" TEXT"#).execute(db)
+  }
+  // ON CONFLICT REPLACE, so a Cat synced from an older build is still in care.
+  migrator.registerMigration("Add archived cats") { db in
+    try #sql(#"ALTER TABLE "cats" ADD COLUMN "isArchived" INTEGER NOT NULL ON CONFLICT REPLACE DEFAULT 0"#).execute(db)
   }
   try migrator.migrate(database)
   return database

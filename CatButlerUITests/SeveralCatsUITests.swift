@@ -52,4 +52,46 @@ final class SeveralCatsUITests: XCTestCase {
     app.tabBars.buttons["Today"].tap()
     XCTAssertTrue(app.staticTexts["Mochi"].waitForExistence(timeout: 5))
   }
+
+  @MainActor
+  func testACatCanBeArchivedThenDeleted() {
+    let app = XCUIApplication.launchedForTesting()
+    app.completeFirstRun()
+    app.tabBars.buttons["Cats"].tap()
+    app.buttons["Add Cat"].tap()
+    app.fillInCat(named: "Tofu")
+    app.buttons["Save"].tap()
+
+    app.catRow("Tofu").tap()
+    XCTAssertTrue(app.navigationBars["Edit Cat"].waitForExistence(timeout: 5))
+    app.buttons["Archive Cat"].tap()
+    XCTAssertTrue(app.staticTexts["Archived"].waitForExistence(timeout: 5))
+    attachScreenshot("Archived", of: app)
+
+    // Its history stays readable.
+    app.catRow("Tofu").tap()
+    app.buttons["Weight Chart"].tap()
+    XCTAssertTrue(app.navigationBars["Tofu's Weight"].waitForExistence(timeout: 5))
+    XCTAssertTrue(app.containing("9 lb").exists)
+    app.navigationBars.buttons.firstMatch.tap()
+
+    // Only Miso is left in care: nothing to switch or feed all.
+    app.tabBars.buttons["Today"].tap()
+    XCTAssertTrue(app.staticTexts["Miso"].waitForExistence(timeout: 5))
+    XCTAssertFalse(app.buttons["Feed All"].exists)
+
+    app.tabBars.buttons["Cats"].tap()
+    app.buttons["Delete Cat"].tap()
+    app.buttons["Delete Tofu and Their History"].tap()
+    XCTAssertTrue(app.catRow("Miso").waitForExistence(timeout: 5))
+    XCTAssertFalse(app.catRow("Tofu").exists)
+    XCTAssertFalse(app.staticTexts["Archived"].exists)
+
+    // With every Cat archived, Today says so instead of starting first run over.
+    app.catRow("Miso").tap()
+    app.buttons["Archive Cat"].tap()
+    XCTAssertTrue(app.staticTexts["Archived"].waitForExistence(timeout: 5))
+    app.tabBars.buttons["Today"].tap()
+    XCTAssertTrue(app.staticTexts["No Cats in Care"].waitForExistence(timeout: 5))
+  }
 }
